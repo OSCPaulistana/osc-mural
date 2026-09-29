@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mural OSC · Administração</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+  <link rel="icon" href="/assets/branding/osc-simbolo.png">
+  <link rel="stylesheet" href="/assets/base.css">
+  <link rel="stylesheet" href="/assets/admin.css">
+</head>
+<body>
+  <!-- Login -->
+  <div class="login" id="login" hidden>
+    <form class="login-caixa" id="form-login">
+      <div class="login-marcas">
+        <img src="/assets/branding/osc-simbolo.png" alt="OSC">
+        <img src="/assets/branding/paulistana-simbolo.png" alt="Paulistana">
+      </div>
+      <h1>Mural OSC</h1>
+      <p>Entre com a senha de administrador para publicar avisos, eventos e fotos.</p>
+      <label class="rotulo" for="senha">Senha</label>
+      <input class="input" id="senha" name="senha" type="password" autocomplete="current-password" required autofocus>
+      <div class="erro" id="erro-login" hidden></div>
+      <button class="btn primario largo" type="submit">Entrar</button>
+    </form>
+  </div>
+
+  <!-- Painel -->
+  <div class="app" id="app" hidden>
+    <aside class="lateral">
+      <div class="marca">
+        <img src="/assets/branding/osc-simbolo.png" alt="OSC">
+        <img src="/assets/branding/paulistana-simbolo.png" alt="Paulistana">
+        <div>
+          <strong>Mural OSC</strong>
+          <span>Administração</span>
+        </div>
+      </div>
+      <nav class="menu">
+        <a href="#avisos" data-vista="avisos"><i class="ic" style="--i:url(/icones/megaphone.svg)"></i>Avisos<span id="c-avisos"></span></a>
+        <a href="#eventos" data-vista="eventos"><i class="ic" style="--i:url(/icones/calendar.svg)"></i>Agenda<span id="c-eventos"></span></a>
+        <a href="#midias" data-vista="midias"><i class="ic" style="--i:url(/icones/images.svg)"></i>Fotos e vídeos<span id="c-midias"></span></a>
+        <a href="#sistemas" data-vista="sistemas"><i class="ic" style="--i:url(/icones/layout-grid.svg)"></i>Sistemas<span id="c-sistemas"></span></a>
+        <a href="#pcs" data-vista="pcs"><i class="ic" style="--i:url(/icones/monitor-smartphone.svg)"></i>Computadores<span id="c-pcs"></span></a>
+      </nav>
+      <div class="lateral-rodape">
+        <p class="conectados"><span class="ponto-vivo"></span><span id="n-conectados">Nenhum PC conectado</span></p>
+        <a href="/" target="_blank" rel="noopener"><i class="ic" style="--i:url(/icones/download.svg)"></i>Página de instalação</a>
+        <a href="/widget" target="_blank" rel="noopener"><i class="ic" style="--i:url(/icones/external-link.svg)"></i>Ver o mural</a>
+        <button id="sair" type="button"><i class="ic" style="--i:url(/icones/log-out.svg)"></i>Sair</button>
+      </div>
+    </aside>
+
+    <div class="principal">
+      <header class="cabecalho">
+        <div>
+          <h1 id="titulo"></h1>
+          <p id="subtitulo"></p>
+        </div>
+        <button class="btn primario" id="novo" type="button"><i class="ic" style="--i:url(/icones/plus.svg)"></i><span id="novo-rotulo">Novo</span></button>
+      </header>
+      <div class="corpo">
+        <section class="conteudo" id="conteudo"></section>
+        <aside class="previa">
+          <div class="previa-topo">
+            <span>Como aparece nos PCs</span>
+            <select id="previa-unidade" aria-label="Ver como a unidade">
+              <option value="">Todas as unidades</option>
+              <option value="assis">Assis</option>
+              <option value="sao-paulo">São Paulo</option>
+            </select>
+          </div>
+          <div class="previa-mesa" id="previa-mesa">
+            <iframe id="previa" src="/widget" title="Pré-visualização do mural"></iframe>
+          </div>
+        </aside>
+      </div>
+    </div>
+  </div>
+
+  <dialog class="dialogo" id="dialogo">
+    <form id="form-item" novalidate>
+      <header class="dialogo-topo">
+        <h2 id="dialogo-titulo"></h2>
+        <button class="btn-ico" type="button" id="fechar" aria-label="Fechar"><i class="ic" style="--i:url(/icones/x.svg)"></i></button>
+      </header>
+      <div class="dialogo-corpo" id="campos"></div>
+      <div class="erro" id="erro-form" hidden></div>
+      <footer class="dialogo-rodape">
+        <button class="btn" type="button" id="cancelar">Cancelar</button>
+        <button class="btn primario" type="submit" id="salvar">Publicar</button>
+      </footer>
+    </form>
+  </dialog>
+
+  <input type="file" id="arquivos" accept="image/jpeg,image/png,image/webp,video/mp4,video/webm" multiple hidden>
+  <input type="file" id="arquivo-logo" accept="image/png,image/jpeg,image/webp" hidden>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="/assets/upload.js"></script>
+  <script src="/assets/admin.js"></script>
+</body>
+</html>

@@ -1,0 +1,33 @@
+/* Base comum do Mural OSC.
+   Paleta institucional: preto, branco e cinza. O destaque é o azul-petróleo do símbolo da OSC. */
+:root {
+  --osc-petroleo: #0f5a84;
+  --osc-petroleo-claro: #6fa8cf;
+  --osc-areia: #a79a87; /* o traço do "S" no símbolo */
+
+  /* Cor do ícone de cada sistema (tons sóbrios, legíveis no claro e no escuro) */
+  --cor-azul: #2f5fb3;
+  --cor-petroleo: #0f5a84;
+  --cor-grafite: #4b4b4b;
+  --cor-verde: #2f7d4f;
+  --cor-ambar: #a86a12;
+  --cor-vermelho: #b0392f;
+  --cor-roxo: #6b4fa3;
+  --cor-ciano: #1f7a8c;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+img, video { display: block; }
+
+/* Ícones Lucide servidos em /icones/<nome>.svg, pintados com a cor do texto. */
+.ic {
+  display: inline-block;
+  flex: none;
+  width: 16px;
+  height: 16px;
+  background: currentColor;
+  -webkit-mask: var(--i) center / contain no-repeat;
+  mask: var(--i) center / contain no-repeat;
+}

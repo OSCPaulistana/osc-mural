@@ -1,0 +1,27 @@
+{
+  "name": "osc-mural",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Mural OSC: atalhos, avisos, agenda e fotos na área de trabalho dos colaboradores",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "dev": "node scripts/build.mjs && node scripts/dev.js",
+    "migrar": "node scripts/migrar.js",
+    "instalador": "node scripts/publicar-instalador.mjs"
+  },
+  "dependencies": {
+    "@vercel/blob": "^2.8.0",
+    "@vercel/functions": "^3.9.9",
+    "pg": "^8.23.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.2",
+    "lucide-static": "^1.49.0"
+  },
+  "allowScripts": {
+    "esbuild@0.28.2": true
+  }
+}

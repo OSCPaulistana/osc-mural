@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>Mural OSC</title>
+  <link rel="icon" href="/assets/branding/osc-simbolo.png">
+  <link rel="stylesheet" href="/assets/base.css">
+  <link rel="stylesheet" href="/assets/widget.css">
+</head>
+<body>
+  <main class="painel" id="painel">
+    <header class="topo">
+      <img class="simbolo" src="/assets/branding/osc-simbolo.png" alt="">
+      <img class="simbolo" src="/assets/branding/paulistana-simbolo.png" alt="">
+      <strong class="nome">Mural OSC</strong>
+      <span class="data" id="data"></span>
+      <button class="recolher" id="btn-recolher" title="Recolher" aria-label="Recolher o mural">
+        <i class="ic" style="--i:url(/icones/panel-right-close.svg)"></i>
+      </button>
+    </header>
+
+    <nav class="sistemas" id="sistemas" aria-label="Sistemas"></nav>
+
+    <section class="secao avisos">
+      <h2>Avisos <span class="n" id="n-avisos"></span></h2>
+      <div class="rolagem" id="avisos"></div>
+    </section>
+
+    <section class="secao agenda">
+      <h2>Agenda</h2>
+      <div class="rolagem" id="eventos"></div>
+    </section>
+
+    <section class="galeria" id="galeria" hidden>
+      <h2>Fotos e vídeos <span class="n" id="g-contagem"></span></h2>
+      <div class="palco" id="palco" title="Clique para ver a próxima">
+        <div class="legenda">
+          <strong id="g-legenda"></strong>
+          <span id="g-data"></span>
+        </div>
+        <div class="progresso"><i id="g-barra"></i></div>
+      </div>
+    </section>
+
+    <p class="offline" id="offline" hidden>Sem conexão. Mostrando o último conteúdo recebido.</p>
+  </main>
+
+  <aside class="trilho" id="trilho" hidden>
+    <button class="recolher" id="btn-expandir" title="Abrir o mural" aria-label="Abrir o mural">
+      <i class="ic" style="--i:url(/icones/panel-right-open.svg)"></i>
+    </button>
+    <button class="sino" id="trilho-avisos" title="Avisos">
+      <i class="ic" style="--i:url(/icones/bell.svg)"></i>
+      <span class="bolha" id="trilho-bolha"></span>
+    </button>
+    <div class="trilho-sistemas" id="trilho-sistemas"></div>
+  </aside>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="/assets/widget.js"></script>
+</body>
+</html>

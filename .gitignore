@@ -1,0 +1,12 @@
+node_modules/
+.vercel/
+.env*
+
+# Gerados no build
+public/icones/
+public/assets/upload.js
+
+# App da área de trabalho
+desktop/node_modules/
+desktop/dist/
+desktop/config.json

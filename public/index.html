@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Instalar o Mural OSC</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+  <link rel="icon" href="/assets/branding/osc-simbolo.png">
+  <link rel="stylesheet" href="/assets/base.css">
+  <link rel="stylesheet" href="/assets/admin.css">
+  <style>
+    .instalar { min-height: 100vh; display: grid; place-items: center; padding: 32px 20px; }
+    .caixa { width: min(460px, 100%); }
+    .caixa h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.4px; }
+    .caixa > p { color: var(--mudo); margin: 6px 0 22px; }
+    .versao { font-size: 12.5px; color: var(--mudo); margin-top: 10px; }
+    .passos { margin: 28px 0 0; padding: 18px 0 0; border-top: 1px solid var(--linha); list-style: none; counter-reset: passo; display: grid; gap: 12px; }
+    .passos li { counter-increment: passo; display: grid; grid-template-columns: 22px 1fr; gap: 8px; color: var(--texto-2); }
+    .passos li::before { content: counter(passo); font-weight: 600; color: var(--mudo-2); font-variant-numeric: tabular-nums; }
+    .passos b { font-weight: 600; color: var(--texto); }
+    .rodape-link { display: inline-block; margin-top: 24px; font-size: 12.5px; color: var(--mudo); text-decoration: underline; text-underline-offset: 3px; }
+  </style>
+</head>
+<body>
+  <main class="instalar">
+    <div class="caixa">
+      <div class="login-marcas">
+        <img src="/assets/branding/osc-simbolo.png" alt="OSC">
+        <img src="/assets/branding/paulistana-simbolo.png" alt="Paulistana">
+      </div>
+      <h1>Instalar o Mural OSC</h1>
+      <p>Use esta página no computador do colaborador. O mural fica na área de trabalho e abre sozinho quando o Windows liga.</p>
+
+      <!-- O download pede a senha do admin, mas não deixa sessão aberta neste computador. -->
+      <form method="post" action="/api/instalador" autocomplete="off">
+        <label class="rotulo" for="senha">Senha de administrador</label>
+        <input class="input" id="senha" name="senha" type="password" autocomplete="off" required>
+        <div class="erro" id="erro" hidden></div>
+        <button class="btn primario largo" type="submit"><i class="ic" style="--i:url(/icones/download.svg)"></i>Baixar instalador para Windows</button>
+      </form>
+      <p class="versao" id="versao"></p>
+
+      <ol class="passos">
+        <li><span>Abra o arquivo <b>MuralOSC-Setup</b> que foi baixado.</span></li>
+        <li><span>Se o Windows mostrar <b>“O Windows protegeu o computador”</b>, clique em <b>Mais informações</b> e depois em <b>Executar assim mesmo</b>.</span></li>
+        <li><span>Escolha a <b>unidade</b> do computador (São Paulo ou Assis). Pronto: o mural aparece na lateral direita da área de trabalho e passa a iniciar com o Windows.</span></li>
+      </ol>
+
+      <a class="rodape-link" href="/admin">Ir para a administração</a>
+    </div>
+  </main>
+  <script>
+    (function () {
+      var erro = new URLSearchParams(location.search).get('erro');
+      if (erro) {
+        var el = document.getElementById('erro');
+        el.textContent = erro;
+        el.hidden = false;
+        history.replaceState(null, '', '/');
+      }
+      fetch('/api/instalador/info').then(function (r) { return r.json(); }).then(function (info) {
+        if (!info) {
+          document.getElementById('versao').textContent = 'O instalador ainda não foi publicado.';
+          return;
+        }
+        var mb = (info.tamanho / 1024 / 1024).toFixed(0);
+        var dia = new Date(info.publicadoEm).toLocaleDateString('pt-BR');
+        document.getElementById('versao').textContent = 'Versão ' + info.versao + ' · ' + mb + ' MB · publicada em ' + dia + ' · Windows 10 e 11';
+      }).catch(function () {});
+    })();
+  </script>
+</body>
+</html>

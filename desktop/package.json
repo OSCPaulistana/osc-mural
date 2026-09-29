@@ -1,0 +1,67 @@
+{
+  "name": "mural-osc",
+  "productName": "Mural OSC",
+  "version": "1.0.0",
+  "description": "Mural OSC na área de trabalho",
+  "author": "OSC Paulistana",
+  "private": true,
+  "main": "main.js",
+  "scripts": {
+    "dev": "electron .",
+    "dist": "electron-builder --win nsis --x64 --publish never"
+  },
+  "dependencies": {
+    "koffi": "^3.3.2"
+  },
+  "build": {
+    "appId": "br.com.oscpaulistana.mural",
+    "productName": "Mural OSC",
+    "copyright": "OSC Paulistana",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "fixar.js",
+      "config.json",
+      "recursos/**",
+      "package.json",
+      "!**/node_modules/koffi/src/**",
+      "!**/node_modules/koffi/doc/**",
+      "!**/node_modules/koffi/vendor/**"
+    ],
+    "asarUnpack": [
+      "**/node_modules/koffi/**",
+      "**/node_modules/@koromix/**"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "recursos/icone.png"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "runAfterFinish": true,
+      "createDesktopShortcut": false,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Mural OSC",
+      "artifactName": "MuralOSC-Setup-${version}.${ext}",
+      "deleteAppDataOnUninstall": false
+    }
+  },
+  "allowScripts": {
+    "koffi@3.3.2": true
+  },
+  "devDependencies": {
+    "electron": "^44.5.0",
+    "electron-builder": "^26.15.3"
+  }
+}
