@@ -32,12 +32,14 @@ execSync('npm run dist', { cwd: desktop, stdio: 'inherit' });
 const exe = path.join(desktop, 'dist', `MuralOSC-Setup-${version}.exe`);
 const tamanho = fs.statSync(exe).size;
 
-// 3. Envia para o Vercel Blob
+// 3. Envia para um nome estável: o Blob não acrescenta um sufixo aleatório
+// ao nome que aparece para o colaborador ao baixar.
 console.log(`Enviando ${(tamanho / 1024 / 1024).toFixed(0)} MB para o Vercel Blob...`);
 const { put } = await import('@vercel/blob');
 const blob = await put(`instalador/MuralOSC-Setup-${version}.exe`, fs.createReadStream(exe), {
   access: 'public',
-  addRandomSuffix: true,
+  addRandomSuffix: false,
+  allowOverwrite: true,
   multipart: true,
   contentType: 'application/octet-stream',
   token: process.env.BLOB_READ_WRITE_TOKEN,
@@ -45,9 +47,14 @@ const blob = await put(`instalador/MuralOSC-Setup-${version}.exe`, fs.createRead
 
 // 4. A página de instalação passa a entregar esta versão
 const { consulta, obterPool } = require('../lib/db.js');
+const [anterior] = await consulta(`select valor from config where chave = 'instalador'`);
 await consulta(
   `insert into config (chave, valor) values ('instalador', $1)
    on conflict (chave) do update set valor = excluded.valor, atualizado_em = now()`,
   [{ url: blob.downloadUrl, versao: version, tamanho, publicadoEm: new Date().toISOString() }]);
+if (anterior?.valor?.url && anterior.valor.url !== blob.downloadUrl) {
+  try { await (await import('@vercel/blob')).del(anterior.valor.url, { token: process.env.BLOB_READ_WRITE_TOKEN }); }
+  catch (erro) { console.warn('[mural] não removeu o instalador anterior do Blob:', erro.message); }
+}
 await obterPool().end();
 console.log(`Publicado: versão ${version}. A página ${site} já entrega este instalador.`);
