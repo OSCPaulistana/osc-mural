@@ -50,6 +50,8 @@ a { color: inherit; text-decoration: none; }
 .btn.primario:hover { background: #333; }
 .btn.largo { width: 100%; height: 40px; margin-top: 14px; }
 .btn:disabled { opacity: 0.55; cursor: default; }
+.btn[aria-disabled="true"] { opacity: 0.55; cursor: wait; }
+.baixar { text-decoration: none; }
 
 .btn-ico {
   width: 30px;

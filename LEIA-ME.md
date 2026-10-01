@@ -12,7 +12,7 @@ O administrador publica tudo pelo site, e os PCs recebem em até 30 segundos.
 
 | Parte | Onde fica | O que faz |
 |---|---|---|
-| Página de instalação | `/` | Baixa o instalador. Pede a senha do admin, mas não deixa sessão aberta no PC da pessoa. |
+| Página de instalação | `/` | O colaborador baixa o instalador sem precisar da senha do admin. |
 | Administração | `/admin` | Publica avisos, agenda, fotos e vídeos e sistemas. Mostra os computadores com o mural ligado. |
 | Mural | `/widget` | A tela que aparece nos PCs. O app carrega do site, então mudanças visuais chegam a todos sem reinstalar. |
 | API | `/api/*` | Uma função da Vercel (`api/index.js` → `lib/app.js`). |
@@ -32,7 +32,7 @@ Sem uma das duas coisas, o site não entrega avisos nem fotos. Isso importa por 
 |---|---|
 | `DATABASE_URL` | Conexão do Neon (criada pela integração). |
 | `BLOB_READ_WRITE_TOKEN` | Vercel Blob (criada ao conectar o Blob). |
-| `MURAL_SENHA_ADMIN` | Senha do admin e da página de instalação. |
+| `MURAL_SENHA_ADMIN` | Senha do admin. |
 | `MURAL_SEGREDO` | Assina o cookie de sessão. É um texto aleatório longo. |
 | `MURAL_CHAVE_PCS` | Chave que o app instalado usa. Se trocar, é preciso gerar o instalador de novo. |
 | `MURAL_SITE_URL` | Endereço público do site, usado ao gerar o instalador. |

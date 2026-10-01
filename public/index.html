@@ -32,15 +32,10 @@
         <img src="/assets/branding/paulistana-simbolo.png" alt="Paulistana">
       </div>
       <h1>Instalar o Mural OSC</h1>
-      <p>Use esta página no computador do colaborador. O mural fica na área de trabalho e abre sozinho quando o Windows liga.</p>
+      <p>Abra esta página no computador do colaborador e baixe o mural. Ele inicia sozinho com o Windows.</p>
 
-      <!-- O download pede a senha do admin, mas não deixa sessão aberta neste computador. -->
-      <form method="post" action="/api/instalador" autocomplete="off">
-        <label class="rotulo" for="senha">Senha de administrador</label>
-        <input class="input" id="senha" name="senha" type="password" autocomplete="off" required>
-        <div class="erro" id="erro" hidden></div>
-        <button class="btn primario largo" type="submit"><i class="ic" style="--i:url(/icones/download.svg)"></i>Baixar instalador para Windows</button>
-      </form>
+      <a class="btn primario largo baixar" id="baixar" href="/api/instalador" aria-disabled="true" tabindex="-1"><i class="ic" style="--i:url(/icones/download.svg)"></i>Baixar instalador para Windows</a>
+      <p class="erro" id="erro" hidden></p>
       <p class="versao" id="versao"></p>
 
       <ol class="passos">
@@ -61,11 +56,15 @@
         el.hidden = false;
         history.replaceState(null, '', '/');
       }
+      var botao = document.getElementById('baixar');
+      botao.addEventListener('click', function (ev) { if (botao.getAttribute('aria-disabled') === 'true') ev.preventDefault(); });
       fetch('/api/instalador/info').then(function (r) { return r.json(); }).then(function (info) {
         if (!info) {
           document.getElementById('versao').textContent = 'O instalador ainda não foi publicado.';
           return;
         }
+        botao.removeAttribute('aria-disabled');
+        botao.removeAttribute('tabindex');
         var mb = (info.tamanho / 1024 / 1024).toFixed(0);
         var dia = new Date(info.publicadoEm).toLocaleDateString('pt-BR');
         document.getElementById('versao').textContent = 'Versão ' + info.versao + ' · ' + mb + ' MB · publicada em ' + dia + ' · Windows 10 e 11';
