@@ -41,7 +41,7 @@ Sem uma das duas coisas, o site não entrega avisos nem fotos. Isso importa por 
 
 ```powershell
 npm install
-vercel env pull .env.local --environment production   # traz as variáveis de produção
+vercel env pull .env.local --environment production   # não exporta valores marcados como Secret
 npm run migrar        # cria as tabelas (e o conteúdo inicial, na primeira vez)
 npm run dev           # site local em http://localhost:3000, usando o .env.local
 ```
@@ -51,6 +51,10 @@ npm run dev           # site local em http://localhost:3000, usando o .env.local
 1. Aumente `version` em `desktop/package.json`.
 2. Rode `cd desktop; npm install` e depois `cd ..; npm run instalador`.
 3. O script gera `MuralOSC-Setup-<versão>.exe`, envia para o Blob e a página de instalação passa a entregar essa versão.
+
+Variáveis marcadas como Secret são exportadas pela Vercel como `[SENSITIVE]`. Esse valor nunca pode ir para um instalador. A chave real de `MURAL_CHAVE_PCS` deve ser sincronizada entre a produção e o ambiente local. Antes de empacotar, o script verifica a autenticação no site; depois confere a configuração dentro do ASAR. Uma falha aborta a publicação. As versões anteriores do instalador são preservadas no Blob.
+
+Para a verificação de uma versão no Windows deste escritório, defina `$env:MURAL_TESTAR_INSTALADOR='1'` antes de `npm run instalador`. O teste roda o código dentro do ASAR, confere o conteúdo autenticado, aciona Win+D quatro vezes e verifica recolher/expandir com a escala da tela. A publicação só continua se passar. Requer o perfil local do Mural já configurado; não é um teste para ambiente sem desktop. `node --test scripts/tests/configuracao.test.mjs` verifica o bloqueio de credenciais de exemplo e rejeitadas.
 
 ## Comportamento nos PCs
 
@@ -62,12 +66,12 @@ npm run dev           # site local em http://localhost:3000, usando o .env.local
   - para com a tela bloqueada;
   - quando nada mudou, o site responde `304`, sem conteúdo.
 - A galeria pausa quando o mural está coberto ou recolhido. Os vídeos tocam sem som.
-- A cada 5 minutos, o app informa ao site o nome do computador, o usuário, a unidade e a versão. É isso que alimenta a tela "Computadores".
+- Ao iniciar e a cada minuto, o app informa ao site o nome do computador, o usuário, a unidade e a versão. Se falhar, tenta novamente após 15 segundos. O menu da bandeja mostra o estado da conexão e os erros ficam em `%AppData%\Mural OSC\mural.log`. O painel atualiza a lista a cada 30 segundos.
 - RAM medida num PC com memória apertada: perto de 90 MB. Num PC folgado, a estimativa é de 150 a 250 MB. O pico é com vídeo tocando.
 
 ## Limitações conhecidas
 
 - **O instalador não tem assinatura digital.** Na primeira execução, o Windows mostra "O Windows protegeu o computador": clique em *Mais informações* e depois em *Executar assim mesmo*. Para tirar esse aviso é preciso comprar um certificado de assinatura de código.
-- **Só foi testado no Windows 11 (build 26200).** Falta testar no Windows 10. O encaixe na área de trabalho usa um truque do Windows (dono = `Progman`), e não uma API oficial. Veja `desktop/fixar.js`.
+- **Teste local no Windows 11 (build 26200).** Falta testar no Windows 10. O mural usa `SetParent`/`WS_CHILD` para se tornar filho do host dos ícones (`Progman` ou `WorkerW`), permanecendo visível no Win+D. A identificação desses hosts do Explorer depende de implementação do Windows. Veja `desktop/fixar.js`.
 - Usa só o monitor principal.
 - A senha do admin é uma só, sem usuários separados.

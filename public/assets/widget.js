@@ -4,6 +4,7 @@
 (() => {
   const params = new URLSearchParams(location.search);
   const UNIDADE = params.get('unidade') || '';
+  const CACHE = `mural:cache:${UNIDADE || 'todas'}`;
   const app = window.mural || null;
   const naPrevia = window.top !== window;
   const $ = (id) => document.getElementById(id);
@@ -240,7 +241,9 @@
     try {
       const r = await fetch('/api/dados' + (UNIDADE ? '?unidade=' + encodeURIComponent(UNIDADE) : ''), { cache: 'no-cache' });
       if (r.status === 401) {
-        mostrarAviso(naPrevia ? 'Sua sessão expirou. Entre de novo no admin.' : 'Este mural só abre pelo app instalado ou com login no admin.');
+        mostrarAviso(naPrevia ? 'Sua sessão expirou. Entre de novo no admin.' : app
+          ? 'Instalação não autorizada. Baixe a versão atualizada no site do Mural OSC.'
+          : 'Este mural só abre pelo app instalado ou com login no admin.');
         return;
       }
       if (!r.ok) throw new Error(String(r.status));
@@ -249,7 +252,7 @@
       if (texto !== ultimoTexto) {
         ultimoTexto = texto;
         dados = JSON.parse(texto);
-        try { localStorage.setItem('mural:cache', texto); } catch {}
+        try { localStorage.setItem(CACHE, texto); } catch {}
         render();
       }
     } catch {
@@ -257,7 +260,7 @@
       // Sem internet na hora de ligar o PC: mostra o último conteúdo conhecido em vez de um painel vazio.
       if (!vistos) {
         try {
-          const cache = JSON.parse(localStorage.getItem('mural:cache'));
+          const cache = JSON.parse(localStorage.getItem(CACHE));
           if (cache) { dados = cache; render(); }
         } catch {}
       }

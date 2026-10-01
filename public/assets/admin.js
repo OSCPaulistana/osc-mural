@@ -54,7 +54,7 @@
     },
     pcs: {
       titulo: 'Computadores',
-      subtitulo: 'PCs com o mural instalado. Cada um avisa a cada 5 minutos que está ligado.',
+      subtitulo: 'PCs com o mural instalado. A conexão é atualizada a cada minuto; o painel atualiza a cada 30 segundos.',
       novo: 'Baixar instalador',
       singular: 'computador',
       campos: [],

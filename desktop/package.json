@@ -1,7 +1,7 @@
 {
   "name": "mural-osc",
   "productName": "Mural OSC",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "description": "Mural OSC na área de trabalho",
   "author": "OSC Paulistana",
   "private": true,
@@ -27,7 +27,7 @@
       "config.json",
       "recursos/**",
       "package.json",
-      "!**/node_modules/koffi/src/**",
+      "!**/node_modules/koffi/src/**/*.{c,cc,cpp,h,hpp,asm,S}",
       "!**/node_modules/koffi/doc/**",
       "!**/node_modules/koffi/vendor/**"
     ],

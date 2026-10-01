@@ -11,12 +11,13 @@ const path = require('node:path');
 const fs = require('node:fs');
 const os = require('node:os');
 const crypto = require('node:crypto');
-const { fixarNaAreaDeTrabalho, mandarParaTras } = require('./fixar');
+const { posicionarNaAreaDeTrabalho } = require('./fixar');
 
 const LARGURA = 360;
 const LARGURA_RECOLHIDA = 64;
 const MARGEM = 12;
-const PRESENCA_MS = 5 * 60_000;
+const PRESENCA_MS = 60_000;
+const RETENTATIVA_MS = 15_000;
 const ICONE = path.join(__dirname, 'recursos', 'bandeja.png');
 const UNIDADES = [['sao-paulo', 'São Paulo'], ['assis', 'Assis']];
 
@@ -35,6 +36,19 @@ let recolhido = false;
 let alturaRecolhida = 0;
 let energiaAtiva = true;
 let local = null; // { id, unidade } salvo no perfil do usuário
+let timerPresenca;
+let enviandoPresenca = false;
+let conectado = false;
+let erroConexao = '';
+
+function registrarErro(contexto, erro) {
+  console.warn(`[mural] ${contexto}: ${erro.message}`);
+  try {
+    const arquivo = path.join(app.getPath('userData'), 'mural.log');
+    if (fs.existsSync(arquivo) && fs.statSync(arquivo).size > 512_000) fs.writeFileSync(arquivo, '');
+    fs.appendFileSync(arquivo, `${new Date().toISOString()} ${contexto}: ${erro.message}\n`);
+  } catch {}
+}
 
 if (!app.requestSingleInstanceLock()) {
   app.quit();
@@ -87,9 +101,10 @@ function limites() {
 }
 
 function reposicionar() {
-  if (!janela) return;
-  janela.setBounds(limites());
-  mandarParaTras(janela);
+  if (!janela || janela.isDestroyed()) return;
+  try {
+    if (!posicionarNaAreaDeTrabalho(janela, limites())) throw new Error('O Explorer ainda não disponibilizou a área de trabalho.');
+  } catch (erro) { registrarErro('área de trabalho', erro); }
 }
 
 function enderecoDoMural() {
@@ -97,7 +112,7 @@ function enderecoDoMural() {
 }
 
 async function iniciar() {
-  if (!URL_BASE || !CHAVE) throw new Error('Instalador sem endereço do site ou sem chave. Baixe o instalador de novo.');
+  if (!URL_BASE || CHAVE.length < 12 || CHAVE === '[SENSITIVE]') throw new Error('Instalador sem configuração válida. Baixe o instalador atualizado no site do Mural OSC.');
   app.setAppUserModelId('br.com.oscpaulistana.mural');
   if (app.isPackaged) app.setLoginItemSettings({ openAtLogin: true });
   await prepararLocal();
@@ -149,11 +164,13 @@ async function iniciar() {
   });
 
   janela.once('ready-to-show', () => {
-    fixarNaAreaDeTrabalho(janela);
     janela.showInactive();
-    mandarParaTras(janela);
+    reposicionar();
   });
-  janela.on('focus', () => mandarParaTras(janela));
+  janela.on('focus', reposicionar);
+  // Reanexa se o Explorer trocar o host e recupera posição/visibilidade.
+  const timerDesktop = setInterval(reposicionar, 5000);
+  janela.once('closed', () => clearInterval(timerDesktop));
 
   janela.loadURL(enderecoDoMural());
 
@@ -162,6 +179,7 @@ async function iniciar() {
   // Com a tela bloqueada ou o PC suspenso, o mural para de consultar o site.
   const mudarEnergia = (ativo) => {
     energiaAtiva = ativo;
+    clearTimeout(timerPresenca);
     janela?.webContents.send('mural:energia', ativo);
     if (ativo) avisarPresenca();
   };
@@ -172,7 +190,6 @@ async function iniciar() {
 
   criarBandeja();
   avisarPresenca();
-  setInterval(avisarPresenca, PRESENCA_MS);
 }
 
 function criarBandeja() {
@@ -182,6 +199,7 @@ function criarBandeja() {
   }
   const itens = [
     { label: `Mural OSC ${app.getVersion()}`, enabled: false },
+    { label: conectado ? 'Conectado ao escritório' : (erroConexao || 'Conectando ao escritório…'), enabled: false },
     { type: 'separator' },
     {
       label: 'Unidade deste computador',
@@ -207,9 +225,11 @@ function criarBandeja() {
 
 /** Avisa o site que este PC está com o mural ligado (aparece na tela "Computadores" do admin). */
 async function avisarPresenca() {
-  if (!energiaAtiva || !local) return;
+  clearTimeout(timerPresenca);
+  if (!energiaAtiva || !local || enviandoPresenca) return;
+  enviandoPresenca = true;
   try {
-    await fetch(`${URL_BASE}/api/presenca`, {
+    const resposta = await fetch(`${URL_BASE}/api/presenca`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-Mural-Chave': CHAVE },
       body: JSON.stringify({
@@ -221,7 +241,20 @@ async function avisarPresenca() {
       }),
       signal: AbortSignal.timeout(15_000),
     });
-  } catch {}
+    if (!resposta.ok) throw new Error(resposta.status === 401
+      ? 'Instalação não autorizada. Baixe a versão atualizada.' : `Servidor indisponível (${resposta.status}).`);
+    conectado = true;
+    erroConexao = '';
+  } catch (erro) {
+    conectado = false;
+    erroConexao = erro.message;
+    registrarErro('conexão', erro);
+  } finally {
+    enviandoPresenca = false;
+    bandeja?.setToolTip(conectado ? 'Mural OSC — conectado' : 'Mural OSC — sem conexão');
+    if (bandeja) criarBandeja();
+    if (energiaAtiva) timerPresenca = setTimeout(avisarPresenca, conectado ? PRESENCA_MS : RETENTATIVA_MS);
+  }
 }
 
 // ---------- Pedidos do widget ----------
