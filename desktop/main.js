@@ -6,7 +6,7 @@
 //
 // Desenvolvimento:  MURAL_URL=http://localhost:3000 MURAL_CHAVE=... npx electron .
 
-const { app, BrowserWindow, screen, shell, ipcMain, Tray, Menu, nativeImage, Notification, dialog, session, powerMonitor } = require('electron');
+const { app, BrowserWindow, screen, shell, ipcMain, Tray, Menu, nativeImage, Notification, dialog, session, powerMonitor, nativeTheme } = require('electron');
 const path = require('node:path');
 const fs = require('node:fs');
 const os = require('node:os');
@@ -31,6 +31,7 @@ const URL_BASE = String(process.env.MURAL_URL || EMBUTIDO.url || '').replace(/\/
 const CHAVE = String(process.env.MURAL_CHAVE || EMBUTIDO.chave || '');
 
 let janela = null;
+let janelaGaleria = null;
 let bandeja = null;
 let recolhido = false;
 let alturaRecolhida = 0;
@@ -107,6 +108,11 @@ function reposicionar() {
   } catch (erro) { registrarErro('área de trabalho', erro); }
 }
 
+/** Mesma cor de fundo do mural, para não piscar branco ou preto ao carregar. */
+function corDeFundo() {
+  return nativeTheme.shouldUseDarkColors ? '#1c1c1c' : '#f5f4f1';
+}
+
 function enderecoDoMural() {
   return `${URL_BASE}/widget?${new URLSearchParams({ app: '1', unidade: local.unidade })}`;
 }
@@ -126,8 +132,9 @@ async function iniciar() {
   janela = new BrowserWindow({
     ...limites(),
     frame: false,
-    transparent: true,
-    backgroundColor: '#00000000',
+    thickFrame: false, // sem a borda invisível de redimensionamento (virava faixa preta)
+    roundedCorners: false,
+    backgroundColor: corDeFundo(),
     hasShadow: false,
     resizable: false,
     movable: false,
@@ -173,6 +180,7 @@ async function iniciar() {
   janela.once('closed', () => clearInterval(timerDesktop));
 
   janela.loadURL(enderecoDoMural());
+  nativeTheme.on('updated', () => janela?.setBackgroundColor(corDeFundo()));
 
   for (const ev of ['display-metrics-changed', 'display-added', 'display-removed']) screen.on(ev, reposicionar);
 
@@ -284,6 +292,38 @@ ipcMain.handle('mural:abrir', async (_ev, id) => {
   return erro ? { ok: false, erro: `Não foi possível abrir ${sistema.nome}.` } : { ok: true };
 });
 
+// Galeria de fotos: janela normal, grande, com todos os álbuns. Uma só por vez.
+ipcMain.handle('mural:galeria', (_ev, albumId) => {
+  const consulta = new URLSearchParams({ app: '1', unidade: local.unidade });
+  if (typeof albumId === 'string' && /^[0-9a-f-]{36}$/.test(albumId)) consulta.set('album', albumId);
+  const endereco = `${URL_BASE}/galeria?${consulta}`;
+  if (janelaGaleria && !janelaGaleria.isDestroyed()) {
+    janelaGaleria.loadURL(endereco);
+    if (janelaGaleria.isMinimized()) janelaGaleria.restore();
+    janelaGaleria.focus();
+    return;
+  }
+  const area = screen.getPrimaryDisplay().workArea;
+  janelaGaleria = new BrowserWindow({
+    width: Math.min(1280, area.width - 80),
+    height: Math.min(860, area.height - 60),
+    minWidth: 720,
+    minHeight: 480,
+    title: 'Galeria · Mural OSC',
+    icon: ICONE,
+    backgroundColor: corDeFundo(),
+    autoHideMenuBar: true,
+    show: false,
+    webPreferences: { contextIsolation: true, sandbox: true, nodeIntegration: false, spellcheck: false },
+  });
+  janelaGaleria.setMenu(null);
+  janelaGaleria.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+  janelaGaleria.webContents.on('will-navigate', (ev, url) => { if (!url.startsWith(`${URL_BASE}/`)) ev.preventDefault(); });
+  janelaGaleria.once('ready-to-show', () => janelaGaleria.show());
+  janelaGaleria.on('closed', () => { janelaGaleria = null; });
+  janelaGaleria.loadURL(endereco);
+});
+
 ipcMain.handle('mural:recolher', (_ev, valor, altura) => {
   recolhido = valor === true;
   alturaRecolhida = recolhido ? Math.max(0, Math.round(altura)) : 0;
@@ -294,4 +334,4 @@ ipcMain.handle('mural:notificar', (_ev, titulo, texto) => {
   if (Notification.isSupported()) new Notification({ title: `Aviso urgente: ${titulo}`, body: texto, icon: ICONE }).show();
 });
 
-app.on('window-all-closed', () => app.quit());
+app.on('window-all-closed', () => { if (!janela || janela.isDestroyed()) app.quit(); });

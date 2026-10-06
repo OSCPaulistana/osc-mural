@@ -21,7 +21,23 @@
       </button>
     </header>
 
-    <nav class="sistemas" id="sistemas" aria-label="Sistemas"></nav>
+    <section class="bloco-sistemas" id="bloco-sistemas">
+      <div class="cab-sistemas">
+        <div class="abas" id="abas" role="tablist" aria-label="Páginas de atalhos"></div>
+        <button class="mini" id="btn-personalizar" title="Escolher e ordenar os atalhos" aria-label="Personalizar atalhos">
+          <i class="ic" style="--i:url(/icones/sliders-horizontal.svg)"></i>
+        </button>
+      </div>
+      <nav class="sistemas" id="sistemas" aria-label="Sistemas"></nav>
+      <div class="personalizar" id="personalizar" hidden>
+        <p>Escolha quais atalhos aparecem neste computador e a ordem deles.</p>
+        <div class="lista-personalizar" id="lista-personalizar"></div>
+        <div class="acoes-personalizar">
+          <button class="link" id="p-restaurar" type="button">Restaurar padrão</button>
+          <button class="botao" id="p-concluir" type="button">Concluir</button>
+        </div>
+      </div>
+    </section>
 
     <section class="secao avisos">
       <h2>Avisos <span class="n" id="n-avisos"></span></h2>
@@ -34,8 +50,8 @@
     </section>
 
     <section class="galeria" id="galeria" hidden>
-      <h2>Fotos e vídeos <span class="n" id="g-contagem"></span></h2>
-      <div class="palco" id="palco" title="Clique para ver a próxima">
+      <h2>Fotos <span class="n" id="g-contagem"></span><button class="link ver-todas" id="btn-galeria" type="button">Ver álbuns</button></h2>
+      <div class="palco" id="palco" title="Clique para abrir a galeria">
         <div class="legenda">
           <strong id="g-legenda"></strong>
           <span id="g-data"></span>

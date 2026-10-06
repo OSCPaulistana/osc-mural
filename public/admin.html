@@ -20,11 +20,35 @@
         <img src="/assets/branding/paulistana-simbolo.png" alt="Paulistana">
       </div>
       <h1>Mural OSC</h1>
-      <p>Entre com a senha de administrador para publicar avisos, eventos e fotos.</p>
-      <label class="rotulo" for="senha">Senha</label>
-      <input class="input" id="senha" name="senha" type="password" autocomplete="current-password" required autofocus>
+      <p>Entre com seu e-mail e senha de administrador.</p>
+      <label class="rotulo" for="email">E-mail</label>
+      <input class="input" id="email" name="email" type="email" autocomplete="username" required autofocus>
+      <label class="rotulo espaco" for="senha">Senha</label>
+      <input class="input" id="senha" name="senha" type="password" autocomplete="current-password" required>
       <div class="erro" id="erro-login" hidden></div>
       <button class="btn primario largo" type="submit">Entrar</button>
+    </form>
+
+    <!-- Primeiro acesso: cria o primeiro administrador com a senha de instalação -->
+    <form class="login-caixa" id="form-primeiro" hidden>
+      <div class="login-marcas">
+        <img src="/assets/branding/osc-simbolo.png" alt="OSC">
+        <img src="/assets/branding/paulistana-simbolo.png" alt="Paulistana">
+      </div>
+      <h1>Primeiro acesso</h1>
+      <p>Crie o primeiro administrador. Depois dele, os outros são cadastrados dentro do painel.</p>
+      <label class="rotulo" for="p-nome">Seu nome</label>
+      <input class="input" id="p-nome" autocomplete="name" required>
+      <label class="rotulo espaco" for="p-email">E-mail</label>
+      <input class="input" id="p-email" type="email" autocomplete="username" required>
+      <label class="rotulo espaco" for="p-senha">Crie uma senha</label>
+      <input class="input" id="p-senha" type="password" autocomplete="new-password" minlength="10" required>
+      <div class="ajuda">Pelo menos 10 caracteres.</div>
+      <label class="rotulo espaco" for="p-mestra">Senha de instalação</label>
+      <input class="input" id="p-mestra" type="password" autocomplete="off" required>
+      <div class="ajuda">A senha que foi passada na instalação do sistema. Ela só serve para este primeiro cadastro.</div>
+      <div class="erro" id="erro-primeiro" hidden></div>
+      <button class="btn primario largo" type="submit">Criar e entrar</button>
     </form>
   </div>
 
@@ -42,14 +66,17 @@
       <nav class="menu">
         <a href="#avisos" data-vista="avisos"><i class="ic" style="--i:url(/icones/megaphone.svg)"></i>Avisos<span id="c-avisos"></span></a>
         <a href="#eventos" data-vista="eventos"><i class="ic" style="--i:url(/icones/calendar.svg)"></i>Agenda<span id="c-eventos"></span></a>
-        <a href="#midias" data-vista="midias"><i class="ic" style="--i:url(/icones/images.svg)"></i>Fotos e vídeos<span id="c-midias"></span></a>
+        <a href="#galeria" data-vista="galeria"><i class="ic" style="--i:url(/icones/images.svg)"></i>Galeria<span id="c-galeria"></span></a>
         <a href="#sistemas" data-vista="sistemas"><i class="ic" style="--i:url(/icones/layout-grid.svg)"></i>Sistemas<span id="c-sistemas"></span></a>
         <a href="#pcs" data-vista="pcs"><i class="ic" style="--i:url(/icones/monitor-smartphone.svg)"></i>Computadores<span id="c-pcs"></span></a>
+        <a href="#admins" data-vista="admins"><i class="ic" style="--i:url(/icones/shield-user.svg)"></i>Administradores<span id="c-admins"></span></a>
       </nav>
       <div class="lateral-rodape">
         <p class="conectados"><span class="ponto-vivo"></span><span id="n-conectados">Nenhum PC conectado</span></p>
         <a href="/" target="_blank" rel="noopener"><i class="ic" style="--i:url(/icones/download.svg)"></i>Página de instalação</a>
         <a href="/widget" target="_blank" rel="noopener"><i class="ic" style="--i:url(/icones/external-link.svg)"></i>Ver o mural</a>
+        <div class="eu" id="eu"></div>
+        <button id="minha-senha" type="button"><i class="ic" style="--i:url(/icones/key-round.svg)"></i>Minha senha</button>
         <button id="sair" type="button"><i class="ic" style="--i:url(/icones/log-out.svg)"></i>Sair</button>
       </div>
     </aside>
@@ -96,7 +123,7 @@
     </form>
   </dialog>
 
-  <input type="file" id="arquivos" accept="image/jpeg,image/png,image/webp,video/mp4,video/webm" multiple hidden>
+  <input type="file" id="arquivos" accept="image/jpeg,image/png,image/webp" multiple hidden>
   <input type="file" id="arquivo-logo" accept="image/png,image/jpeg,image/webp" hidden>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 

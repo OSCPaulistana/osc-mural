@@ -10,13 +10,15 @@
   const $ = (id) => document.getElementById(id);
 
   const FOTO_MS = 8000;
-  const VIDEO_MAX_S = 45;
+  const POR_ABA = 8;
+  const PREFS = 'mural:sistemas';
 
   if (!app && !naPrevia) document.body.classList.add('navegador');
+  if (app) document.body.classList.add('no-app');
 
   const NOME_UNIDADE = { todas: 'Todas as unidades', assis: 'Assis', 'sao-paulo': 'São Paulo' };
 
-  let dados = { sistemas: [], avisos: [], eventos: [], midias: [] };
+  let dados = { sistemas: [], avisos: [], eventos: [], fotos: [] };
   let vistos = null; // ids dos avisos já exibidos; null até a primeira carga
   let recolhido = false;
 
@@ -65,6 +67,97 @@
     </button>`;
   }
 
+  // ---------- Atalhos: abas de 8 e preferências deste computador ----------
+  // Cada colaborador escolhe quais atalhos aparecem e em que ordem. Fica salvo neste PC;
+  // atalhos novos publicados pelo admin entram no fim da lista.
+
+  let abaAtual = 0;
+  let personalizando = false;
+
+  function lerPrefs() {
+    try {
+      const p = JSON.parse(localStorage.getItem(PREFS));
+      if (p && Array.isArray(p.ordem) && Array.isArray(p.ocultos)) return p;
+    } catch {}
+    return { ordem: [], ocultos: [] };
+  }
+
+  function salvarPrefs(p) {
+    try { localStorage.setItem(PREFS, JSON.stringify(p)); } catch {}
+  }
+
+  /** Todos os sistemas na ordem escolhida pelo colaborador. */
+  function sistemasOrdenados() {
+    const { ordem } = lerPrefs();
+    const posicao = new Map(ordem.map((id, i) => [id, i]));
+    return dados.sistemas
+      .map((s, i) => ({ s, i }))
+      .sort((a, b) => (posicao.get(a.s.id) ?? 1e6 + a.i) - (posicao.get(b.s.id) ?? 1e6 + b.i))
+      .map((x) => x.s);
+  }
+
+  function sistemasVisiveis() {
+    const ocultos = new Set(lerPrefs().ocultos);
+    return sistemasOrdenados().filter((s) => !ocultos.has(s.id));
+  }
+
+  function renderSistemas() {
+    const visiveis = sistemasVisiveis();
+    const paginas = Math.max(1, Math.ceil(visiveis.length / POR_ABA));
+    abaAtual = Math.min(abaAtual, paginas - 1);
+    $('abas').innerHTML = paginas > 1
+      ? Array.from({ length: paginas }, (_, i) => `<button class="aba${i === abaAtual ? ' ativa' : ''}" role="tab" aria-selected="${i === abaAtual}" data-aba="${i}" title="Atalhos ${i * POR_ABA + 1} a ${Math.min((i + 1) * POR_ABA, visiveis.length)}">${i + 1}</button>`).join('')
+      : '<span class="titulo-sistemas">Sistemas</span>';
+    const pagina = visiveis.slice(abaAtual * POR_ABA, (abaAtual + 1) * POR_ABA);
+    $('sistemas').innerHTML = pagina.map(blocoSistema).join('')
+      || '<p class="vazio">Nenhum atalho escolhido. Use o botão ao lado para escolher.</p>';
+    $('trilho-sistemas').innerHTML = visiveis.map(blocoSistema).join('');
+    $('bloco-sistemas').hidden = !dados.sistemas.length;
+    if (personalizando) renderPersonalizar();
+  }
+
+  function renderPersonalizar() {
+    const ocultos = new Set(lerPrefs().ocultos);
+    const lista = sistemasOrdenados();
+    $('lista-personalizar').innerHTML = lista.map((s, i) => {
+      const visivel = !ocultos.has(s.id);
+      const marca = s.logo ? `<img src="${esc(s.logo)}" alt="">` : icone(s.icone);
+      return `<div class="item-p${visivel ? '' : ' oculto'}">
+        <span class="tile" style="--cor:var(--cor-${esc(s.cor)})">${marca}</span>
+        <span class="nome-p">${esc(s.nome)}</span>
+        <button class="mini" data-p="mostrar" data-id="${esc(s.id)}" title="${visivel ? 'Esconder' : 'Mostrar'}" aria-pressed="${visivel}">${icone(visivel ? 'eye' : 'eye-off')}</button>
+        <button class="mini" data-p="subir" data-id="${esc(s.id)}" title="Mover para cima"${i === 0 ? ' disabled' : ''}>${icone('chevron-up')}</button>
+        <button class="mini" data-p="descer" data-id="${esc(s.id)}" title="Mover para baixo"${i === lista.length - 1 ? ' disabled' : ''}>${icone('chevron-down')}</button>
+      </div>`;
+    }).join('');
+  }
+
+  function personalizar(ativo) {
+    personalizando = ativo;
+    $('personalizar').hidden = !ativo;
+    $('sistemas').hidden = ativo;
+    $('abas').hidden = ativo;
+    $('bloco-sistemas').classList.toggle('editando', ativo);
+    $('btn-personalizar').classList.toggle('ativo', ativo);
+    renderSistemas();
+  }
+
+  function mudarPreferencia(acao, id) {
+    const prefs = lerPrefs();
+    const ordem = sistemasOrdenados().map((s) => s.id);
+    const i = ordem.indexOf(id);
+    if (acao === 'mostrar') {
+      prefs.ocultos = prefs.ocultos.includes(id) ? prefs.ocultos.filter((x) => x !== id) : [...prefs.ocultos, id];
+    } else if (i >= 0) {
+      const j = i + (acao === 'subir' ? -1 : 1);
+      if (j < 0 || j >= ordem.length) return;
+      [ordem[i], ordem[j]] = [ordem[j], ordem[i]];
+    }
+    prefs.ordem = ordem;
+    salvarPrefs(prefs);
+    renderSistemas();
+  }
+
   function linhaAviso(a, chegouAgora) {
     const meta = [];
     if (a.prioridade === 'urgente') meta.push('<b>Urgente</b>');
@@ -99,10 +192,7 @@
   function render() {
     $('data').textContent = maiuscula(new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' }).replace('-feira', ''));
 
-    const sistemas = dados.sistemas.map(blocoSistema).join('');
-    $('sistemas').innerHTML = sistemas;
-    $('sistemas').hidden = !sistemas;
-    $('trilho-sistemas').innerHTML = sistemas;
+    renderSistemas();
 
     const novos = vistos ? dados.avisos.filter((a) => !vistos.has(a.id)) : [];
     $('avisos').innerHTML = dados.avisos.map((a) => linhaAviso(a, novos.includes(a))).join('')
@@ -112,17 +202,17 @@
 
     $('eventos').innerHTML = dados.eventos.map(linhaEvento).join('') || '<p class="vazio">Nada marcado por enquanto.</p>';
 
-    galeria.atualizar(dados.midias || []);
+    galeria.atualizar(dados.fotos || []);
 
     if (app) for (const a of novos) if (a.prioridade === 'urgente') app.notificar(a.titulo, a.texto);
     vistos = new Set(dados.avisos.map((a) => a.id));
     if (recolhido) avisarTamanhoDoTrilho();
   }
 
-  // ---------- Galeria de fotos e vídeos ----------
-  // Fotos ficam 8 s na tela; vídeos tocam sem som até o fim (no máximo 45 s).
-  // Pausa com o mouse em cima, com o mural recolhido e quando o Windows informa que a
-  // janela está coberta por outros programas, para não gastar processamento à toa.
+  // ---------- Fotos no rodapé ----------
+  // Cada foto fica 8 s na tela. Pausa com o mouse em cima, com o mural recolhido e quando o
+  // Windows informa que a janela está coberta, para não gastar processamento à toa.
+  // Clicar abre a galeria completa, com todos os álbuns.
 
   const galeria = {
     itens: [],
@@ -131,17 +221,18 @@
     atual: null, // { item, el, decorrido }
     mouseEmCima: false,
 
-    atualizar(midias) {
-      const chave = midias.map((m) => `${m.id}:${m.url}:${m.legenda}:${m.data}`).join('|');
+    atualizar(fotos) {
+      const chave = fotos.map((f) => `${f.id}:${f.url}:${f.album}:${f.data}`).join('|');
       if (chave === this.chave) return;
       const idAtual = this.atual?.item.id;
       this.chave = chave;
-      this.itens = midias;
-      $('galeria').hidden = !midias.length;
-      $('g-contagem').textContent = midias.length > 1 ? `${midias.length}` : '';
-      if (!midias.length) return this.limpar();
-      const mesmo = midias.findIndex((m) => m.id === idAtual);
-      if (mesmo >= 0) { this.indice = mesmo; this.legendar(midias[mesmo]); return; }
+      this.itens = fotos;
+      $('galeria').hidden = !fotos.length;
+      const albuns = new Set(fotos.map((f) => f.albumId)).size;
+      $('g-contagem').textContent = albuns ? `${albuns} ${albuns === 1 ? 'álbum' : 'álbuns'}` : '';
+      if (!fotos.length) return this.limpar();
+      const mesmo = fotos.findIndex((f) => f.id === idAtual);
+      if (mesmo >= 0) { this.indice = mesmo; this.legendar(fotos[mesmo]); return; }
       this.mostrar(0);
     },
 
@@ -149,64 +240,45 @@
       return this.mouseEmCima || recolhido || document.hidden || !energiaAtiva;
     },
 
-    legendar(m) {
-      $('g-legenda').textContent = m.legenda;
-      const d = dataDe(m.data);
-      $('g-data').textContent = `${d.getDate()} de ${d.toLocaleDateString('pt-BR', { month: 'long' })}${m.tipo === 'video' ? ' · vídeo' : ''}`;
+    legendar(f) {
+      $('g-legenda').textContent = f.legenda ? `${f.album} · ${f.legenda}` : f.album;
+      const d = dataDe(f.data);
+      $('g-data').textContent = `${d.getDate()} de ${d.toLocaleDateString('pt-BR', { month: 'long' })}`;
     },
 
     mostrar(i) {
-      const m = this.itens[i];
-      if (!m) return;
+      const f = this.itens[i];
+      if (!f) return;
       this.indice = i;
       const palco = $('palco');
-      const el = document.createElement(m.tipo === 'video' ? 'video' : 'img');
+      const el = document.createElement('img');
       el.className = 'camada';
-      el.src = m.url;
-      if (m.tipo === 'video') {
-        el.muted = true;
-        el.playsInline = true;
-        el.preload = 'auto';
-        el.addEventListener('ended', () => this.proxima(el));
-      } else {
-        el.alt = m.legenda;
-        el.decoding = 'async';
-      }
+      el.alt = f.legenda || f.album;
+      el.decoding = 'async';
+      el.src = f.url;
       el.addEventListener('error', () => setTimeout(() => this.proxima(el), 1000), { once: true });
-      el.addEventListener(m.tipo === 'video' ? 'loadeddata' : 'load', () => {
+      el.addEventListener('load', () => {
         requestAnimationFrame(() => el.classList.add('visivel'));
         setTimeout(() => { for (const c of palco.querySelectorAll('.camada')) if (c !== el) c.remove(); }, 700);
-        if (m.tipo === 'video' && !this.parado()) el.play().catch(() => {});
       }, { once: true });
       palco.prepend(el);
-      this.atual = { item: m, el, decorrido: 0 };
-      this.legendar(m);
+      this.atual = { item: f, el, decorrido: 0 };
+      this.legendar(f);
       $('g-barra').style.width = '0%';
     },
 
     proxima(origem) {
-      if (origem && this.atual?.el !== origem) return; // evento atrasado de uma mídia que já saiu
-      if (this.itens.length === 1 && this.atual?.item.tipo === 'foto') { this.atual.decorrido = 0; return; }
+      if (origem && this.atual?.el !== origem) return; // evento atrasado de uma foto que já saiu
+      if (this.itens.length === 1) { if (this.atual) this.atual.decorrido = 0; return; }
       this.mostrar((this.indice + 1) % this.itens.length);
     },
 
     tick(ms) {
       const a = this.atual;
-      if (!a) return;
-      if (a.item.tipo === 'video') {
-        const v = a.el;
-        if (this.parado()) { if (!v.paused) v.pause(); return; }
-        if (v.paused && v.readyState >= 2) v.play().catch(() => {});
-        if (!v.duration) return;
-        const total = Math.min(v.duration, VIDEO_MAX_S);
-        $('g-barra').style.width = `${Math.min(100, (v.currentTime / total) * 100)}%`;
-        if (v.currentTime >= VIDEO_MAX_S) this.proxima(v);
-      } else {
-        if (this.parado()) return;
-        a.decorrido += ms;
-        $('g-barra').style.width = `${Math.min(100, (a.decorrido / FOTO_MS) * 100)}%`;
-        if (a.decorrido >= FOTO_MS) this.proxima(a.el);
-      }
+      if (!a || this.parado()) return;
+      a.decorrido += ms;
+      $('g-barra').style.width = `${Math.min(100, (a.decorrido / FOTO_MS) * 100)}%`;
+      if (a.decorrido >= FOTO_MS) this.proxima(a.el);
     },
 
     limpar() {
@@ -215,7 +287,17 @@
     },
   };
 
-  $('palco').addEventListener('click', () => galeria.proxima());
+  function abrirGaleria(albumId) {
+    if (app?.abrirGaleria) return app.abrirGaleria(albumId || '');
+    if (app) return toast('Atualize o Mural OSC para ver a galeria: baixe a versão nova no site.');
+    const consulta = new URLSearchParams();
+    if (albumId) consulta.set('album', albumId);
+    if (UNIDADE) consulta.set('unidade', UNIDADE);
+    window.open(`/galeria${consulta.size ? '?' + consulta : ''}`, '_blank', 'noopener');
+  }
+
+  $('palco').addEventListener('click', () => abrirGaleria(galeria.atual?.item.albumId));
+  $('btn-galeria').addEventListener('click', () => abrirGaleria());
   $('palco').addEventListener('mouseenter', () => { galeria.mouseEmCima = true; });
   $('palco').addEventListener('mouseleave', () => { galeria.mouseEmCima = false; });
   setInterval(() => galeria.tick(200), 200);
@@ -326,10 +408,25 @@
 
   document.addEventListener('click', (ev) => {
     const sistema = ev.target.closest('.sistema');
-    if (sistema) return abrirSistema(sistema);
+    if (sistema && !personalizando) return abrirSistema(sistema);
+    const aba = ev.target.closest('[data-aba]');
+    if (aba) { abaAtual = Number(aba.dataset.aba); return renderSistemas(); }
+    const pref = ev.target.closest('[data-p]');
+    if (pref) return mudarPreferencia(pref.dataset.p, pref.dataset.id);
     const aviso = ev.target.closest('.aviso');
     if (aviso) aviso.classList.toggle('aberto');
   });
+  $('btn-personalizar').addEventListener('click', () => personalizar(!personalizando));
+  $('p-concluir').addEventListener('click', () => personalizar(false));
+  $('p-restaurar').addEventListener('click', () => { salvarPrefs({ ordem: [], ocultos: [] }); abaAtual = 0; renderSistemas(); });
+  // Rolar o mouse sobre os atalhos troca de aba.
+  $('sistemas').addEventListener('wheel', (ev) => {
+    const paginas = Math.ceil(sistemasVisiveis().length / POR_ABA);
+    if (paginas < 2) return;
+    ev.preventDefault();
+    abaAtual = Math.max(0, Math.min(paginas - 1, abaAtual + (ev.deltaY > 0 ? 1 : -1)));
+    renderSistemas();
+  }, { passive: false });
   $('btn-recolher').addEventListener('click', () => recolher(true));
   $('btn-expandir').addEventListener('click', () => recolher(false));
   $('trilho-avisos').addEventListener('click', () => recolher(false));

@@ -7,5 +7,6 @@ contextBridge.exposeInMainWorld('mural', {
   abrir: (id) => ipcRenderer.invoke('mural:abrir', String(id)),
   recolher: (valor, altura) => ipcRenderer.invoke('mural:recolher', Boolean(valor), Number(altura) || 0),
   notificar: (titulo, texto) => ipcRenderer.invoke('mural:notificar', String(titulo), String(texto || '')),
+  abrirGaleria: (albumId) => ipcRenderer.invoke('mural:galeria', String(albumId || '')),
   onEnergia: (aoMudar) => ipcRenderer.on('mural:energia', (_ev, ativo) => aoMudar(Boolean(ativo))),
 });

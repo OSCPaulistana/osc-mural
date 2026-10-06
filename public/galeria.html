@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Galeria · Mural OSC</title>
+  <link rel="icon" href="/assets/branding/osc-simbolo.png">
+  <link rel="stylesheet" href="/assets/base.css">
+  <link rel="stylesheet" href="/assets/galeria.css">
+</head>
+<body>
+  <header class="topo">
+    <button class="voltar" id="voltar" type="button" hidden><i class="ic" style="--i:url(/icones/arrow-left.svg)"></i>Álbuns</button>
+    <img class="simbolo" src="/assets/branding/osc-simbolo.png" alt="">
+    <img class="simbolo" src="/assets/branding/paulistana-simbolo.png" alt="">
+    <div class="titulos">
+      <h1 id="titulo">Galeria de fotos</h1>
+      <p id="subtitulo"></p>
+    </div>
+    <button class="fechar" id="fechar" type="button" hidden title="Fechar a galeria"><i class="ic" style="--i:url(/icones/x.svg)"></i></button>
+  </header>
+
+  <main class="conteudo">
+    <div class="grade-albuns" id="albuns"></div>
+    <div class="grade-fotos" id="fotos" hidden></div>
+    <p class="vazio" id="vazio" hidden></p>
+  </main>
+
+  <div class="tela-cheia" id="tela-cheia" hidden role="dialog" aria-modal="true" aria-label="Foto ampliada">
+    <img id="foto-grande" alt="">
+    <button class="nav anterior" id="anterior" type="button" aria-label="Foto anterior"><i class="ic" style="--i:url(/icones/chevron-left.svg)"></i></button>
+    <button class="nav proxima" id="proxima" type="button" aria-label="Próxima foto"><i class="ic" style="--i:url(/icones/chevron-right.svg)"></i></button>
+    <button class="fechar-foto" id="fechar-foto" type="button" aria-label="Fechar foto"><i class="ic" style="--i:url(/icones/x.svg)"></i></button>
+    <div class="rodape-foto"><span id="legenda-grande"></span><span id="posicao"></span></div>
+  </div>
+
+  <script src="/assets/galeria.js"></script>
+</body>
+</html>

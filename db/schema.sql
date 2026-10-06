@@ -72,3 +72,44 @@ create table if not exists tentativas_login (
 create index if not exists tentativas_login_ip_em on tentativas_login (ip, em);
 create index if not exists avisos_expira on avisos (expira_em);
 create index if not exists eventos_data on eventos (data);
+
+-- ---------- Versão 2: administradores, histórico de avisos e galeria em álbuns ----------
+
+create table if not exists admins (
+  id uuid primary key default gen_random_uuid(),
+  nome text not null,
+  email text not null,
+  senha_hash text not null,
+  ativo boolean not null default true,
+  criado_em timestamptz not null default now(),
+  atualizado_em timestamptz,
+  ultimo_acesso timestamptz
+);
+create unique index if not exists admins_email on admins (lower(email));
+
+-- Avisos não são apagados: "retirar do mural" só marca a data, para manter o histórico.
+alter table avisos add column if not exists criado_por uuid references admins (id) on delete set null;
+alter table avisos add column if not exists arquivado_em timestamptz;
+alter table avisos add column if not exists arquivado_por uuid references admins (id) on delete set null;
+
+create table if not exists albuns (
+  id uuid primary key default gen_random_uuid(),
+  titulo text not null,
+  data date not null,
+  unidade text not null check (unidade in ('todas', 'assis', 'sao-paulo')),
+  capa_id uuid,
+  criado_por uuid references admins (id) on delete set null,
+  criado_em timestamptz not null default now(),
+  atualizado_em timestamptz
+);
+
+create table if not exists fotos (
+  id uuid primary key default gen_random_uuid(),
+  album_id uuid not null references albuns (id) on delete cascade,
+  url text not null,
+  legenda text not null default '',
+  ordem integer not null default 0,
+  criado_em timestamptz not null default now(),
+  atualizado_em timestamptz
+);
+create index if not exists fotos_album on fotos (album_id, ordem);

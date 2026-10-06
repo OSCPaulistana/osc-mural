@@ -354,3 +354,39 @@ textarea { height: auto; min-height: 84px; padding: 8px 10px; resize: vertical; 
   z-index: 50;
 }
 .toast.visivel { opacity: 1; transform: translate(-50%, 0); }
+
+/* ---------- Versão 2: filtros, galeria em álbuns e administradores ---------- */
+.rotulo.espaco { margin-top: 12px; }
+.login .ajuda { margin-top: 4px; }
+.eu { padding: 0 10px 8px; font-size: 11.5px; color: #8a8a8a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.btn.perigo { color: var(--urgente); }
+.btn.perigo:hover { background: #fbeceb; }
+
+.filtros { display: flex; gap: 6px; margin-bottom: 14px; max-width: 900px; }
+.filtro { height: 32px; padding: 0 12px; border: 1px solid var(--linha-forte); border-radius: 7px; background: var(--superficie); font-size: 13px; }
+.filtro span { margin-left: 4px; color: var(--mudo); font-variant-numeric: tabular-nums; }
+.filtro:hover { background: var(--hover); }
+.filtro.ativo { border-color: var(--texto); box-shadow: inset 0 0 0 1px var(--texto); }
+
+.grade-albuns { max-width: 900px; display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px 16px; }
+.album { display: flex; flex-direction: column; gap: 2px; padding: 0; border: 0; background: none; text-align: left; }
+.album .capa { display: grid; place-items: center; aspect-ratio: 4 / 3; border-radius: 9px; overflow: hidden; background: #e4e3df; color: var(--mudo-2); margin-bottom: 7px; }
+.album .capa img { width: 100%; height: 100%; object-fit: cover; }
+.album .capa .ic { width: 28px; height: 28px; }
+.album:hover .capa { outline: 2px solid var(--texto); outline-offset: 2px; }
+.album strong { font-weight: 600; }
+.album span:last-child { font-size: 12px; color: var(--mudo); }
+
+.cab-album { max-width: 900px; display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+.cab-album > div { flex: 1; min-width: 0; }
+.cab-album strong { display: block; font-size: 15px; font-weight: 600; }
+.cab-album span { font-size: 12.5px; color: var(--mudo); }
+
+.grade-fotos { max-width: 900px; display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+.foto-admin { min-width: 0; }
+.foto-admin .thumb { position: relative; aspect-ratio: 1; border-radius: 7px; overflow: hidden; background: #e4e3df; }
+.foto-admin .thumb img { width: 100%; height: 100%; object-fit: cover; }
+.foto-admin .acoes.sobre { position: absolute; top: 6px; right: 6px; opacity: 0; padding: 2px; border-radius: 8px; background: rgba(255, 255, 255, 0.94); }
+.foto-admin:hover .acoes.sobre, .foto-admin .acoes.sobre:focus-within { opacity: 1; }
+.foto-admin figcaption { margin-top: 5px; font-size: 12px; color: var(--mudo); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.selo-capa { position: absolute; left: 6px; bottom: 6px; padding: 1px 7px; border-radius: 5px; background: rgba(0, 0, 0, 0.62); color: #fff; font-size: 11px; }

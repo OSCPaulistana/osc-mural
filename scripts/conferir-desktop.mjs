@@ -16,7 +16,7 @@ export async function conferirAcesso(url, chave) {
   });
   if (!resposta.ok) throw new Error(`O servidor rejeitou a configuração do instalador (HTTP ${resposta.status}). Nenhum arquivo foi publicado.`);
   const dados = await resposta.json();
-  if (!['sistemas', 'avisos', 'eventos', 'midias'].every((campo) => Array.isArray(dados[campo]))) {
+  if (!['sistemas', 'avisos', 'eventos', 'fotos'].every((campo) => Array.isArray(dados[campo]))) {
     throw new Error('A API não retornou o conteúdo esperado do mural.');
   }
   return origem;

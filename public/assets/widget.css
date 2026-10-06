@@ -115,10 +115,11 @@ h2 .n { font-weight: 400; color: var(--mudo-2); font-variant-numeric: tabular-nu
 .sistemas {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
+  grid-auto-rows: 70px;
   gap: 2px;
-  padding: 4px 8px 12px;
-  border-bottom: 1px solid var(--linha);
-  flex: none;
+  padding: 0 8px 10px;
+  min-height: 152px;
+  align-content: start;
 }
 .sistemas[hidden] { display: none; }
 .sistema {
@@ -348,3 +349,65 @@ img.camada.visivel { animation: aproximar 9s ease-out forwards; }
 
 @keyframes aproximar { from { transform: scale(1); } to { transform: scale(1.06); } }
 @keyframes chegou { 0% { background: color-mix(in srgb, var(--acento) 14%, transparent); } 100% { background: transparent; } }
+
+/* ---------- Atalhos: abas e personalização ---------- */
+.bloco-sistemas { border-bottom: 1px solid var(--linha); flex: none; display: flex; flex-direction: column; min-height: 0; }
+.bloco-sistemas[hidden] { display: none; }
+.bloco-sistemas.editando { flex: none; }
+.cab-sistemas { display: flex; align-items: center; gap: 4px; height: 26px; padding: 0 10px 0 16px; }
+.titulo-sistemas { font-size: 12px; font-weight: 600; }
+.abas { display: flex; gap: 3px; }
+.abas[hidden] { display: none; }
+.aba {
+  min-width: 24px;
+  height: 22px;
+  padding: 0 7px;
+  border: 1px solid var(--borda);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--mudo);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+.aba:hover { background: var(--hover); color: var(--texto); }
+.aba.ativa { background: var(--texto); border-color: var(--texto); color: var(--fundo); font-weight: 600; }
+.mini {
+  margin-left: auto;
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--mudo);
+  flex: none;
+}
+.mini:hover { background: var(--hover); color: var(--texto); }
+.mini.ativo { background: var(--hover); color: var(--acento); }
+.mini:disabled { opacity: 0.3; pointer-events: none; }
+.mini .ic { width: 14px; height: 14px; }
+.personalizar { display: flex; flex-direction: column; min-height: 0; padding: 0 8px 10px; }
+.personalizar[hidden] { display: none; }
+.personalizar > p { padding: 2px 8px 8px; font-size: 11.5px; color: var(--mudo); }
+.lista-personalizar { overflow-y: auto; max-height: 330px; scrollbar-width: thin; }
+.item-p { display: flex; align-items: center; gap: 8px; padding: 4px 4px 4px 8px; border-radius: 8px; }
+.item-p:hover { background: var(--hover); }
+.item-p .tile { width: 28px; height: 28px; border-radius: 7px; }
+.item-p .tile .ic { width: 15px; height: 15px; }
+.item-p .tile img { width: 19px; height: 19px; }
+.item-p .mini { margin-left: 0; }
+.item-p .mini:first-of-type { margin-left: auto; }
+.nome-p { font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.item-p.oculto .nome-p, .item-p.oculto .tile { opacity: 0.4; }
+.acoes-personalizar { display: flex; align-items: center; justify-content: space-between; padding: 8px 8px 0; }
+.link { border: 0; background: none; color: var(--mudo); font-size: 11.5px; text-decoration: underline; text-underline-offset: 2px; padding: 0; }
+.link:hover { color: var(--texto); }
+.botao { border: 0; border-radius: 7px; background: var(--texto); color: var(--fundo); font-size: 12px; font-weight: 600; padding: 6px 14px; }
+.ver-todas { margin-left: auto; font-weight: 400; }
+
+/* ---------- No app instalado ----------
+   A janela é filha da área de trabalho do Windows, que não aceita transparência:
+   o app recorta os cantos arredondados, então aqui não há borda nem arredondamento. */
+body.no-app .painel, body.no-app .trilho { border: 0; border-radius: 0; }
+.painel:has(.bloco-sistemas.editando) .galeria { display: none; }

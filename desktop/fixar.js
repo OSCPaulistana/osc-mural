@@ -3,11 +3,19 @@
 const GWL_STYLE = -16;
 const WS_CHILD = 0x40000000;
 const WS_POPUP = 0x80000000;
+// Bordas que o Electron mantém em janelas sem moldura (para redimensionar e encaixar).
+// Numa janela filha da área de trabalho elas viram uma faixa preta em volta do mural.
+const WS_BORDAS = 0x00040000 /* THICKFRAME */ | 0x00C00000 /* CAPTION */ | 0x00080000 /* SYSMENU */
+  | 0x00020000 /* MINIMIZEBOX */ | 0x00010000 /* MAXIMIZEBOX */;
+const GWL_EXSTYLE = -20;
+const WS_EX_BORDAS = 0x00000001 /* DLGMODALFRAME */ | 0x00000100 /* WINDOWEDGE */ | 0x00000200 /* CLIENTEDGE */ | 0x00020000 /* STATICEDGE */;
 const SWP_NOACTIVATE = 0x0010;
 const SWP_FRAMECHANGED = 0x0020;
 const SWP_ASYNCWINDOWPOS = 0x4000;
 const SWP_SHOWWINDOW = 0x0040;
+const RAIO_DIP = 12;
 let api;
+let ultimoRecorte = '';
 
 function carregarApi() {
   if (api !== undefined) return api;
@@ -25,7 +33,12 @@ function carregarApi() {
     IsWindowVisible: user32.func('int __stdcall IsWindowVisible(intptr_t)'),
     IsIconic: user32.func('int __stdcall IsIconic(intptr_t)'),
     GetWindowRect: user32.func('int __stdcall GetWindowRect(intptr_t, void *)'),
+    SetWindowRgn: user32.func('int __stdcall SetWindowRgn(intptr_t, intptr_t, int)'),
   };
+  // Janela filha da área de trabalho não aceita transparência: os cantos arredondados
+  // são recortados com uma região do Windows (sem isso, aparecem cantos pretos).
+  const gdi32 = require('koffi').load('gdi32.dll');
+  api.CreateRoundRectRgn = gdi32.func('intptr_t __stdcall CreateRoundRectRgn(int, int, int, int, int, int)');
   return api;
 }
 
@@ -45,15 +58,24 @@ function hostDaAreaDeTrabalho(w) {
   return 0;
 }
 
+/** Sem bordas não-cliente, a área desenhada pelo Chromium ocupa a janela inteira. */
+function tirarBordas(w, hwnd) {
+  const estilo = w.GetWindowLongW(hwnd, GWL_STYLE);
+  if (estilo & WS_BORDAS) w.SetWindowLongW(hwnd, GWL_STYLE, estilo & ~WS_BORDAS);
+  const extra = w.GetWindowLongW(hwnd, GWL_EXSTYLE);
+  if (extra & WS_EX_BORDAS) w.SetWindowLongW(hwnd, GWL_EXSTYLE, extra & ~WS_EX_BORDAS);
+}
+
 function fixarNaAreaDeTrabalho(janela) {
   const w = carregarApi();
   if (!w || janela.isDestroyed()) return false;
   const host = hostDaAreaDeTrabalho(w);
   if (!host) return false;
   const hwnd = hwndDe(janela);
+  tirarBordas(w, hwnd);
   if (Number(w.GetParent(hwnd)) !== host) {
     const estilo = w.GetWindowLongW(hwnd, GWL_STYLE);
-    w.SetWindowLongW(hwnd, GWL_STYLE, (estilo | WS_CHILD) & ~WS_POPUP);
+    w.SetWindowLongW(hwnd, GWL_STYLE, (estilo | WS_CHILD) & ~WS_POPUP & ~WS_BORDAS);
     w.SetParent(hwnd, host);
     if (Number(w.GetParent(hwnd)) !== host) {
       w.SetWindowLongW(hwnd, GWL_STYLE, estilo);
@@ -74,8 +96,20 @@ function posicionarNaAreaDeTrabalho(janela, limites) {
   ponto.writeInt32LE(pixels.y, 4);
   w.MapWindowPoints(0, host, ponto, 1);
   // HWND_TOP entre filhos do desktop, nunca acima dos programas abertos.
-  return !!w.SetWindowPos(hwnd, 0, ponto.readInt32LE(0), ponto.readInt32LE(4), pixels.width, pixels.height,
+  const ok = !!w.SetWindowPos(hwnd, 0, ponto.readInt32LE(0), ponto.readInt32LE(4), pixels.width, pixels.height,
     SWP_NOACTIVATE | SWP_FRAMECHANGED | SWP_ASYNCWINDOWPOS | SWP_SHOWWINDOW);
+  recortarCantos(hwnd, pixels.width, pixels.height, pixels.width / limites.width);
+  return ok;
+}
+
+/** Arredonda os cantos da janela. Só refaz quando o tamanho muda (o Windows fica com a região). */
+function recortarCantos(hwnd, largura, altura, escala) {
+  const w = carregarApi();
+  const chave = `${hwnd}:${largura}x${altura}`;
+  if (!w || chave === ultimoRecorte) return;
+  const diametro = Math.round(RAIO_DIP * 2 * (escala || 1));
+  const regiao = w.CreateRoundRectRgn(0, 0, largura + 1, altura + 1, diametro, diametro);
+  if (regiao && w.SetWindowRgn(hwnd, regiao, 1)) ultimoRecorte = chave;
 }
 
 function estadoDaJanela(janela) {

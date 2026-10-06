@@ -65,6 +65,24 @@ function proximosFeriados(meses = 6) {
   } else {
     console.log('O banco já tem conteúdo; nada foi alterado.');
   }
+
+  // Versão 2: fotos da galeria antiga viram álbuns (um por legenda e data). Vídeos ficam de fora.
+  const [{ existe }] = await consulta("select to_regclass('midias') is not null as existe");
+  const [{ albuns }] = await consulta('select count(*)::int as albuns from albuns');
+  if (existe && albuns === 0) {
+    const antigas = await consulta("select url, legenda, data, unidade from midias where tipo = 'foto' order by data, criado_em");
+    const grupos = new Map();
+    for (const m of antigas) {
+      const chave = `${m.legenda}|${m.data}|${m.unidade}`;
+      if (!grupos.has(chave)) grupos.set(chave, { ...m, urls: [] });
+      grupos.get(chave).urls.push(m.url);
+    }
+    for (const g of grupos.values()) {
+      const [album] = await consulta('insert into albuns (titulo, data, unidade) values ($1, $2, $3) returning id', [g.legenda, g.data, g.unidade]);
+      for (const [i, u] of g.urls.entries()) await consulta('insert into fotos (album_id, url, ordem) values ($1, $2, $3)', [album.id, u, i + 1]);
+    }
+    if (grupos.size) console.log(`Galeria antiga convertida em ${grupos.size} álbum(ns).`);
+  }
   await obterPool().end();
 })().catch((erro) => {
   console.error('Falhou:', erro.message);

@@ -1,10 +1,10 @@
 # Mural OSC
 
 Painel fixo na área de trabalho de cada colaborador. Mostra:
-- **Sistemas**: atalhos para sites e programas;
+- **Sistemas**: atalhos para sites e programas, 8 por aba. Cada colaborador pode esconder e reordenar no próprio PC (botão de ajustes);
 - **Avisos**: normais, importantes ou urgentes;
 - **Agenda**;
-- **Fotos e vídeos** dos eventos.
+- **Fotos** dos eventos: passam no rodapé e o clique abre a galeria completa, com todos os álbuns.
 
 O administrador publica tudo pelo site, e os PCs recebem em até 30 segundos.
 
@@ -13,11 +13,12 @@ O administrador publica tudo pelo site, e os PCs recebem em até 30 segundos.
 | Parte | Onde fica | O que faz |
 |---|---|---|
 | Página de instalação | `/` | O colaborador baixa o instalador sem precisar da senha do admin. |
-| Administração | `/admin` | Publica avisos, agenda, fotos e vídeos e sistemas. Mostra os computadores com o mural ligado. |
+| Administração | `/admin` | Avisos (com histórico de tudo que já foi publicado), agenda, álbuns de fotos, sistemas, computadores e administradores. Login por e-mail e senha. |
+| Galeria | `/galeria` | Todos os álbuns. O app abre numa janela própria; quem está logado no admin abre numa aba. |
 | Mural | `/widget` | A tela que aparece nos PCs. O app carrega do site, então mudanças visuais chegam a todos sem reinstalar. |
 | API | `/api/*` | Uma função da Vercel (`api/index.js` → `lib/app.js`). |
 | Banco | Neon (Postgres) | Tabelas em `db/schema.sql`. |
-| Arquivos | Vercel Blob | Fotos, vídeos, logos e o instalador. Vão do navegador direto para o Blob. |
+| Arquivos | Vercel Blob | Fotos, logos e o instalador. Vão do navegador direto para o Blob. Vídeos não são aceitos por enquanto. |
 | App do Windows | `desktop/` | Electron. Fixa o mural na área de trabalho, abre os atalhos, notifica urgentes e inicia com o Windows. |
 
 **Quem pode ler o conteúdo:**
@@ -32,7 +33,7 @@ Sem uma das duas coisas, o site não entrega avisos nem fotos. Isso importa por 
 |---|---|
 | `DATABASE_URL` | Conexão do Neon (criada pela integração). |
 | `BLOB_READ_WRITE_TOKEN` | Vercel Blob (criada ao conectar o Blob). |
-| `MURAL_SENHA_ADMIN` | Senha do admin. |
+| `MURAL_SENHA_ADMIN` | Senha de instalação: só serve para criar o primeiro administrador. Depois, cada admin entra com o próprio e-mail e senha. |
 | `MURAL_SEGREDO` | Assina o cookie de sessão. É um texto aleatório longo. |
 | `MURAL_CHAVE_PCS` | Chave que o app instalado usa. Se trocar, é preciso gerar o instalador de novo. |
 | `MURAL_SITE_URL` | Endereço público do site, usado ao gerar o instalador. |
@@ -65,13 +66,15 @@ Para a verificação de uma versão no Windows deste escritório, defina `$env:M
   - consulta o site a cada 30 s com o mural à vista e a cada 90 s quando está coberto;
   - para com a tela bloqueada;
   - quando nada mudou, o site responde `304`, sem conteúdo.
-- A galeria pausa quando o mural está coberto ou recolhido. Os vídeos tocam sem som.
+- As fotos do rodapé pausam quando o mural está coberto ou recolhido.
+- A janela não usa transparência (ela é filha da área de trabalho do Windows, que não compõe transparência). Os cantos arredondados são recortados com uma região do Windows, e a borda invisível de redimensionamento fica desligada (`thickFrame: false`). Sem isso aparecem cantos ou faixas pretas.
 - Ao iniciar e a cada minuto, o app informa ao site o nome do computador, o usuário, a unidade e a versão. Se falhar, tenta novamente após 15 segundos. O menu da bandeja mostra o estado da conexão e os erros ficam em `%AppData%\Mural OSC\mural.log`. O painel atualiza a lista a cada 30 segundos.
-- RAM medida num PC com memória apertada: perto de 90 MB. Num PC folgado, a estimativa é de 150 a 250 MB. O pico é com vídeo tocando.
+- RAM medida num PC com memória apertada: perto de 90 MB. Num PC folgado, a estimativa é de 150 a 250 MB. O pico é com foto grande carregando no rodapé.
 
 ## Limitações conhecidas
 
 - **O instalador não tem assinatura digital.** Na primeira execução, o Windows mostra "O Windows protegeu o computador": clique em *Mais informações* e depois em *Executar assim mesmo*. Para tirar esse aviso é preciso comprar um certificado de assinatura de código.
 - **Teste local no Windows 11 (build 26200).** Falta testar no Windows 10. O mural usa `SetParent`/`WS_CHILD` para se tornar filho do host dos ícones (`Progman` ou `WorkerW`), permanecendo visível no Win+D. A identificação desses hosts do Explorer depende de implementação do Windows. Veja `desktop/fixar.js`.
 - Usa só o monitor principal.
-- A senha do admin é uma só, sem usuários separados.
+- Avisos não são apagados: "retirar do mural" guarda o aviso no histórico, com quem publicou e quem retirou.
+- Senhas dos administradores são guardadas com scrypt. Até 10 erros de senha por IP a cada 15 minutos.
