@@ -1,7 +1,7 @@
 {
   "name": "mural-osc",
   "productName": "Mural OSC",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Mural OSC na área de trabalho",
   "author": "OSC Paulistana",
   "private": true,
@@ -24,6 +24,7 @@
       "main.js",
       "preload.js",
       "fixar.js",
+      "notificar.js",
       "config.json",
       "recursos/**",
       "package.json",

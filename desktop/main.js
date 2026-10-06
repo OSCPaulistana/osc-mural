@@ -6,12 +6,13 @@
 //
 // Desenvolvimento:  MURAL_URL=http://localhost:3000 MURAL_CHAVE=... npx electron .
 
-const { app, BrowserWindow, screen, shell, ipcMain, Tray, Menu, nativeImage, Notification, dialog, session, powerMonitor, nativeTheme } = require('electron');
+const { app, BrowserWindow, screen, shell, ipcMain, Tray, Menu, nativeImage, dialog, session, powerMonitor, nativeTheme } = require('electron');
 const path = require('node:path');
 const fs = require('node:fs');
 const os = require('node:os');
 const crypto = require('node:crypto');
 const { posicionarNaAreaDeTrabalho } = require('./fixar');
+const { registrarNome, notificarUrgente } = require('./notificar');
 
 const LARGURA = 360;
 const LARGURA_RECOLHIDA = 64;
@@ -119,7 +120,7 @@ function enderecoDoMural() {
 
 async function iniciar() {
   if (!URL_BASE || CHAVE.length < 12 || CHAVE === '[SENSITIVE]') throw new Error('Instalador sem configuração válida. Baixe o instalador atualizado no site do Mural OSC.');
-  app.setAppUserModelId('br.com.oscpaulistana.mural');
+  registrarNome((erro) => registrarErro('notificações', erro));
   if (app.isPackaged) app.setLoginItemSettings({ openAtLogin: true });
   await prepararLocal();
 
@@ -331,7 +332,7 @@ ipcMain.handle('mural:recolher', (_ev, valor, altura) => {
 });
 
 ipcMain.handle('mural:notificar', (_ev, titulo, texto) => {
-  if (Notification.isSupported()) new Notification({ title: `Aviso urgente: ${titulo}`, body: texto, icon: ICONE }).show();
+  notificarUrgente(titulo, texto);
 });
 
 app.on('window-all-closed', () => { if (!janela || janela.isDestroyed()) app.quit(); });
