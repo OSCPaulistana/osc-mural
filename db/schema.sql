@@ -113,3 +113,19 @@ create table if not exists fotos (
   atualizado_em timestamptz
 );
 create index if not exists fotos_album on fotos (album_id, ordem);
+
+-- ---------- Versão 3: anexo em avisos (1 foto ou documento por aviso) ----------
+alter table avisos add column if not exists anexo_url text not null default '';
+alter table avisos add column if not exists anexo_nome text not null default '';
+
+-- ---------- Versão 4: elogios e chave da seção (agenda x elogios) ----------
+create table if not exists elogios (
+  id uuid primary key default gen_random_uuid(),
+  titulo text not null,
+  texto text not null default '',
+  unidade text not null check (unidade in ('todas', 'assis', 'sao-paulo')),
+  criado_por uuid references admins (id) on delete set null,
+  criado_em timestamptz not null default now(),
+  atualizado_em timestamptz
+);
+insert into config (chave, valor) values ('secao', '"agenda"') on conflict (chave) do nothing;

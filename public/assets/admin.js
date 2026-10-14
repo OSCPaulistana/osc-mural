@@ -13,6 +13,10 @@
   const CORES = ['grafite', 'petroleo', 'azul', 'ciano', 'verde', 'ambar', 'vermelho', 'roxo'];
   const TIPOS_FOTO = ['image/jpeg', 'image/png', 'image/webp'];
   const LIMITE_FOTO_MB = 20;
+  const TIPOS_ANEXO = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'];
+  const LIMITE_ANEXO_MB = 10;
 
   const VISTAS = {
     avisos: {
@@ -23,6 +27,7 @@
       campos: [
         { nome: 'titulo', rotulo: 'Título', tipo: 'texto', max: 90, obrig: true, placeholder: 'Manutenção do servidor no sábado' },
         { nome: 'texto', rotulo: 'Mensagem', tipo: 'area', max: 600 },
+        { nome: 'anexo', rotulo: 'Anexo', tipo: 'anexo', ajuda: 'Opcional. Foto, PDF, Word ou Excel de até 10 MB. Aparece nos PCs como link para abrir.' },
         { nome: 'prioridade', rotulo: 'Prioridade', tipo: 'prioridade', padrao: 'info', ajuda: 'Urgente aparece no topo e também como notificação do Windows.' },
         { nome: 'unidade', rotulo: 'Quem vê', tipo: 'select', opcoes: UNIDADES, padrao: 'todas', metade: true },
         { nome: 'expiraEm', rotulo: 'Mostrar até', tipo: 'data', metade: true, ajuda: 'Em branco, fica até alguém retirar.' },
@@ -39,6 +44,17 @@
         { nome: 'data', rotulo: 'Data', tipo: 'data', obrig: true, metade: true },
         { nome: 'hora', rotulo: 'Horário', tipo: 'hora', metade: true, ajuda: 'Opcional.' },
         { nome: 'local', rotulo: 'Local', tipo: 'texto', max: 60, placeholder: 'Sala de reuniões', metade: true },
+        { nome: 'unidade', rotulo: 'Quem vê', tipo: 'select', opcoes: UNIDADES, padrao: 'todas', metade: true },
+      ],
+    },
+    elogios: {
+      titulo: 'Elogios',
+      subtitulo: 'Reconhecimentos que aparecem no mural quando a seção “Elogios” está ativa.',
+      novo: 'Novo elogio',
+      singular: 'elogio',
+      campos: [
+        { nome: 'titulo', rotulo: 'Para quem', tipo: 'texto', max: 90, obrig: true, placeholder: 'Equipe do fiscal' },
+        { nome: 'texto', rotulo: 'Mensagem', tipo: 'area', max: 300, obrig: true, placeholder: 'Parabéns pelo fechamento do mês sem pendências!' },
         { nome: 'unidade', rotulo: 'Quem vê', tipo: 'select', opcoes: UNIDADES, padrao: 'todas', metade: true },
       ],
     },
@@ -108,7 +124,7 @@
     programa: { placeholder: 'C:\\Pasta\\programa.exe', ajuda: 'Caminho completo do .exe ou .lnk. Se o programa não existir no PC, o mural avisa o colaborador.' },
   };
 
-  let dados = { sistemas: [], avisos: [], eventos: [], albuns: [], pcs: [], admins: [], eu: null };
+  let dados = { sistemas: [], avisos: [], eventos: [], elogios: [], albuns: [], pcs: [], admins: [], eu: null, secao: 'agenda' };
   let vista = 'avisos';
   let albumAberto = null; // id do álbum na tela de fotos
   let filtroAvisos = 'mural'; // 'mural' | 'historico'
@@ -169,9 +185,12 @@
       ? `<button class="btn-ico" data-acao="republicar" data-id="${esc(a.id)}" title="Publicar de novo">${icone('rotate-ccw')}</button>`
       : `<button class="btn-ico" data-acao="editar" data-id="${esc(a.id)}" title="Editar">${icone('pencil')}</button>
          <button class="btn-ico perigo" data-acao="retirar" data-id="${esc(a.id)}" title="Retirar do mural (fica no histórico)">${icone('archive')}</button>`;
+    const anexo = a.anexoUrl
+      ? `<a class="anexo-chip" href="${esc(a.anexoUrl)}" target="_blank" rel="noopener">${icone('paperclip')}<span>${esc(a.anexoNome || 'Anexo')}</span></a>`
+      : '';
     return `<div class="linha${fora ? ' passado' : ''}">
       <span class="marca-p ${fora ? '' : esc(a.prioridade)}"></span>
-      <div class="linha-info"><strong>${esc(a.titulo)}</strong>${a.texto ? `<p>${esc(a.texto)}</p>` : ''}<div class="meta">${meta.join(' · ')}</div></div>
+      <div class="linha-info"><strong>${esc(a.titulo)}</strong>${a.texto ? `<p>${esc(a.texto)}</p>` : ''}${anexo}<div class="meta">${meta.join(' · ')}</div></div>
       <div class="acoes">${botoes}</div>
     </div>`;
   }
@@ -216,6 +235,23 @@
     </div>`;
   }
 
+  function linhaElogio(e) {
+    const meta = [esc(NOME_UNIDADE[e.unidade]), `publicado ${relativo(e.criadoEm)}`];
+    return `<div class="linha">
+      <span class="marca-p online"></span>
+      <div class="linha-info"><strong>${esc(e.titulo)}</strong><p>${esc(e.texto)}</p><div class="meta">${meta.join(' · ')}</div></div>
+      ${acoesPadrao(e.id)}
+    </div>`;
+  }
+
+  // Chave que define qual seção aparece no mural abaixo dos avisos.
+  function chaveSecao() {
+    const atual = dados.secao === 'elogios' ? 'elogios' : 'agenda';
+    return `<div class="chave-secao"><span>Mostrar no mural:</span>
+      <button class="filtro${atual === 'agenda' ? ' ativo' : ''}" data-secao="agenda" type="button">Agenda</button>
+      <button class="filtro${atual === 'elogios' ? ' ativo' : ''}" data-secao="elogios" type="button">Elogios</button>
+    </div>`;
+  }
   function linhaSistema(s, i, total) {
     const mover = `<button class="btn-ico" data-acao="subir" data-id="${esc(s.id)}" title="Mover para cima"${i === 0 ? ' disabled' : ''}>${icone('arrow-up')}</button>
       <button class="btn-ico" data-acao="descer" data-id="${esc(s.id)}" title="Mover para baixo"${i === total - 1 ? ' disabled' : ''}>${icone('arrow-down')}</button>`;
@@ -305,6 +341,7 @@
     const h = hojeIso();
     $('c-avisos').textContent = dados.avisos.filter((a) => !naoNoMural(a)).length || '';
     $('c-eventos').textContent = dados.eventos.filter((e) => e.data >= h).length || '';
+    $('c-elogios').textContent = dados.elogios.length || '';
     $('c-galeria').textContent = dados.albuns.length || '';
     $('c-sistemas').textContent = dados.sistemas.length || '';
     $('c-pcs').textContent = dados.pcs.length || '';
@@ -315,13 +352,14 @@
     if (vista === 'avisos') html = renderAvisos();
     else if (vista === 'galeria') html = album ? renderAlbum(album) : renderAlbuns();
     else {
-      const itens = { eventos: [...dados.eventos].sort((a, b) => ((a.data < h) - (b.data < h)) || a.data.localeCompare(b.data)), sistemas: dados.sistemas, pcs: dados.pcs, admins: dados.admins }[vista];
-      const linha = { eventos: linhaEvento, sistemas: linhaSistema, pcs: linhaPc, admins: linhaAdmin }[vista];
-      html = itens.length
+      const itens = { eventos: [...dados.eventos].sort((a, b) => ((a.data < h) - (b.data < h)) || a.data.localeCompare(b.data)), elogios: [...dados.elogios].sort((a, b) => b.criadoEm.localeCompare(a.criadoEm)), sistemas: dados.sistemas, pcs: dados.pcs, admins: dados.admins }[vista];
+      const linha = { eventos: linhaEvento, elogios: linhaElogio, sistemas: linhaSistema, pcs: linhaPc, admins: linhaAdmin }[vista];
+      const corpo = itens.length
         ? `<div class="tabela">${itens.map((item, i) => linha(item, i, itens.length)).join('')}</div>`
         : vista === 'pcs'
           ? '<div class="vazio"><strong>Nenhum computador ainda</strong>Instale o mural pela página de instalação e o PC aparece aqui em alguns segundos.</div>'
           : `<div class="vazio"><strong>Nenhum ${v.singular} ainda</strong>Use “${v.novo}” para cadastrar o primeiro.</div>`;
+      html = (vista === 'eventos' || vista === 'elogios' ? chaveSecao() : '') + corpo;
     }
     if (!enviando) $('conteudo').innerHTML = html;
   }
@@ -338,7 +376,7 @@
 
   // ---------- Formulários ----------
 
-  function campoHtml(c, valor) {
+  function campoHtml(c, valor, valores = {}) {
     const id = `f-${c.nome}`;
     const metade = c.metade ? ' metade' : '';
     const ajuda = `<div class="ajuda" id="${id}-ajuda">${esc(c.ajuda || '')}</div>`;
@@ -385,6 +423,18 @@
           <button class="btn" type="button" id="logo-remover"${v ? '' : ' hidden'}>Remover</button>
           <span class="ajuda">PNG com fundo transparente fica melhor.</span>
         </div></div>`;
+      case 'anexo': {
+        const url = valores.anexoUrl || '';
+        const nome = valores.anexoNome || '';
+        return `<div class="campo"><span class="rotulo">${esc(c.rotulo)}</span><div class="anexo-campo">
+          <input type="hidden" name="anexoUrl" value="${esc(url)}">
+          <input type="hidden" name="anexoNome" value="${esc(nome)}">
+          <span class="anexo-previa" id="anexo-previa">${url ? `${icone('paperclip')}<span>${esc(nome || 'Anexo')}</span>` : icone('paperclip')}</span>
+          <button class="btn" type="button" id="anexo-enviar">${url ? 'Trocar' : 'Anexar foto ou documento'}</button>
+          <button class="btn" type="button" id="anexo-remover"${url ? '' : ' hidden'}>Remover</button>
+          ${c.ajuda ? `<span class="ajuda">Foto, PDF, Word ou Excel de até ${LIMITE_ANEXO_MB} MB.</span>` : ''}
+        </div></div>`;
+      }
       default:
         return '';
     }
@@ -402,7 +452,7 @@
   function abrirDialogo({ tipo, id = null, titulo, campos, valores = {}, rotulo }) {
     formulario = { tipo, id, campos };
     $('dialogo-titulo').textContent = titulo;
-    $('campos').innerHTML = campos.map((c) => campoHtml(c, valores[c.nome])).join('');
+    $('campos').innerHTML = campos.map((c) => campoHtml(c, valores[c.nome], valores)).join('');
     $('erro-form').hidden = true;
     $('salvar').disabled = false;
     $('salvar').textContent = rotulo;
@@ -411,7 +461,7 @@
     $('campos').querySelector('input.input, textarea')?.focus();
   }
 
-  const COLECAO_DA_VISTA = { avisos: 'avisos', eventos: 'eventos', galeria: 'albuns', sistemas: 'sistemas', admins: 'admins' };
+  const COLECAO_DA_VISTA = { avisos: 'avisos', eventos: 'eventos', elogios: 'elogios', galeria: 'albuns', sistemas: 'sistemas', admins: 'admins' };
 
   function abrirFormulario(id) {
     const v = VISTAS[vista];
@@ -428,6 +478,10 @@
     for (const c of campos) {
       if (c.tipo === 'check') corpo[c.nome] = form.elements[c.nome].checked;
       else if (c.tipo === 'senha') corpo[c.nome] = form.elements[c.nome]?.value ?? '';
+      else if (c.tipo === 'anexo') {
+        corpo.anexoUrl = (form.elements.anexoUrl?.value ?? '').trim();
+        corpo.anexoNome = (form.elements.anexoNome?.value ?? '').trim();
+      }
       else corpo[c.nome] = (form.elements[c.nome]?.value ?? '').trim();
     }
     return corpo;
@@ -523,6 +577,8 @@
   $('form-item').addEventListener('click', (ev) => {
     if (ev.target.closest('#logo-enviar')) $('arquivo-logo').click();
     if (ev.target.closest('#logo-remover')) definirLogo('');
+    if (ev.target.closest('#anexo-enviar')) $('arquivo-anexo').click();
+    if (ev.target.closest('#anexo-remover')) definirAnexo('', '');
   });
   function definirLogo(url) {
     $('form-item').elements.logo.value = url;
@@ -542,6 +598,33 @@
       definirLogo(url);
     } catch (erro) {
       $('logo-enviar').textContent = 'Enviar logo';
+      $('erro-form').textContent = erro.message;
+      $('erro-form').hidden = false;
+    }
+  });
+
+  function definirAnexo(url, nome) {
+    const form = $('form-item');
+    if (!form.elements.anexoUrl) return;
+    form.elements.anexoUrl.value = url;
+    form.elements.anexoNome.value = nome;
+    $('anexo-previa').innerHTML = url ? `${icone('paperclip')}<span>${esc(nome || 'Anexo')}</span>` : icone('paperclip');
+    $('anexo-enviar').textContent = url ? 'Trocar' : 'Anexar foto ou documento';
+    $('anexo-remover').hidden = !url;
+  }
+  $('arquivo-anexo').addEventListener('change', async (ev) => {
+    const f = ev.target.files[0];
+    ev.target.value = '';
+    if (!f) return;
+    try {
+      const tipo = f.type || ({ pdf: 'application/pdf', docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }[/\.([a-z0-9]+)$/i.exec(f.name)?.[1]?.toLowerCase()] || '');
+      if (!TIPOS_ANEXO.includes(tipo)) throw new Error('Formato não aceito. Use foto, PDF, Word ou Excel.');
+      if (f.size > LIMITE_ANEXO_MB * 1024 * 1024) throw new Error(`O anexo pode ter no máximo ${LIMITE_ANEXO_MB} MB.`);
+      $('anexo-enviar').textContent = 'Enviando…';
+      const { url } = await enviarParaBlob('anexos', f);
+      definirAnexo(url, f.name.slice(0, 120));
+    } catch (erro) {
+      if ($('anexo-enviar')) $('anexo-enviar').textContent = $('form-item').elements.anexoUrl?.value ? 'Trocar' : 'Anexar foto ou documento';
       $('erro-form').textContent = erro.message;
       $('erro-form').hidden = false;
     }
@@ -585,6 +668,16 @@
     if (ev.target.closest('#soltar')) { ev.preventDefault(); if (!enviando) $('arquivos').click(); return; }
     const filtro = ev.target.closest('[data-filtro]');
     if (filtro) { filtroAvisos = filtro.dataset.filtro; return render(); }
+    const chave = ev.target.closest('[data-secao]');
+    if (chave) {
+      try {
+        const r = await api('POST', '/api/secao', { secao: chave.dataset.secao });
+        dados.secao = r.secao;
+        toast(r.secao === 'elogios' ? 'O mural agora mostra Elogios.' : 'O mural agora mostra a Agenda.');
+        render();
+      } catch (erro) { toast(erro.message); }
+      return;
+    }
     const album = ev.target.closest('[data-album]');
     if (album) { location.hash = `#galeria/${album.dataset.album}`; return; }
     const botao = ev.target.closest('button[data-acao]');

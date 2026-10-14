@@ -200,6 +200,27 @@ h2 .n { font-weight: 400; color: var(--mudo-2); font-variant-numeric: tabular-nu
 .aviso .meta { grid-column: 2 / 4; margin-top: 4px; font-size: 11px; color: var(--mudo-2); }
 .aviso .meta b { font-weight: 600; color: var(--p); }
 .aviso.chegou { animation: chegou 2.4s ease; }
+.aviso .anexo {
+  grid-column: 2 / 4;
+  margin-top: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  justify-self: start;
+  max-width: 100%;
+  padding: 4px 10px 4px 8px;
+  border: 1px solid var(--borda);
+  border-radius: 99px;
+  background: transparent;
+  color: var(--texto-2);
+  font-size: 11.5px;
+  cursor: pointer;
+}
+.aviso .anexo:hover { background: var(--hover); }
+.aviso .anexo .ic { width: 13px; height: 13px; flex: none; }
+.aviso .anexo span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.aviso .anexo-foto { padding: 3px 10px 3px 3px; }
+.aviso .anexo-foto img { width: 26px; height: 26px; border-radius: 50%; object-fit: cover; flex: none; }
 
 .evento {
   display: grid;
@@ -217,6 +238,62 @@ h2 .n { font-weight: 400; color: var(--mudo-2); font-variant-numeric: tabular-nu
 .evento h3 { font-size: 12.5px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .evento .detalhe { font-size: 11.5px; color: var(--mudo); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .evento .quando-ev { font-weight: 600; }
+
+.elogio {
+  display: grid;
+  grid-template-columns: 30px 1fr;
+  align-items: start;
+  gap: 4px;
+  padding: 6px 8px;
+  border-radius: 8px;
+}
+.elogio:hover { background: var(--hover); }
+.elogio .coracao {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: color-mix(in srgb, var(--acento) 12%, transparent);
+  color: var(--acento);
+}
+.elogio .coracao .ic { width: 13px; height: 13px; }
+.elogio .info { min-width: 0; }
+.elogio h3 { font-size: 12.5px; font-weight: 600; }
+.elogio p { margin-top: 1px; font-size: 12px; color: var(--mudo); }
+.elogio .detalhe { margin-top: 2px; font-size: 11px; color: var(--mudo-2); }
+
+/* ---------- Foto do aviso em tamanho grande ---------- */
+.visor {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.82);
+}
+.visor[hidden] { display: none; }
+.visor img { max-width: 100%; max-height: calc(100% - 60px); border-radius: 8px; object-fit: contain; }
+.visor p { max-width: 100%; font-size: 12px; color: #fff; opacity: 0.85; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.visor-fechar {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+}
+.visor-fechar:hover { background: rgba(255, 255, 255, 0.28); }
+.visor-fechar .ic { width: 16px; height: 16px; }
 
 .vazio { padding: 10px 8px 14px; font-size: 12px; color: var(--mudo-2); }
 

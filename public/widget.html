@@ -44,9 +44,9 @@
       <div class="rolagem" id="avisos"></div>
     </section>
 
-    <section class="secao agenda">
-      <h2>Agenda</h2>
-      <div class="rolagem" id="eventos"></div>
+    <section class="secao" id="bloco-secao">
+      <h2 id="secao-titulo">Agenda</h2>
+      <div class="rolagem" id="secao-corpo"></div>
     </section>
 
     <section class="galeria" id="galeria" hidden>
@@ -75,6 +75,14 @@
   </aside>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <div class="visor" id="visor" hidden>
+    <button class="visor-fechar" id="visor-fechar" type="button" aria-label="Fechar a foto">
+      <i class="ic" style="--i:url(/icones/x.svg)"></i>
+    </button>
+    <img id="visor-img" alt="">
+    <p id="visor-legenda"></p>
+  </div>
 
   <script src="/assets/widget.js"></script>
 </body>

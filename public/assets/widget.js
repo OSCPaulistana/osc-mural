@@ -18,7 +18,7 @@
 
   const NOME_UNIDADE = { todas: 'Todas as unidades', assis: 'Assis', 'sao-paulo': 'São Paulo' };
 
-  let dados = { sistemas: [], avisos: [], eventos: [], fotos: [] };
+  let dados = { sistemas: [], avisos: [], eventos: [], elogios: [], secao: 'agenda', fotos: [] };
   let vistos = null; // ids dos avisos já exibidos; null até a primeira carga
   let recolhido = false;
 
@@ -164,11 +164,17 @@
     if (a.prioridade === 'importante') meta.push('<b>Importante</b>');
     if (a.fixado) meta.push('Fixado');
     if (a.unidade !== 'todas') meta.push(esc(NOME_UNIDADE[a.unidade]));
+    const anexo = a.anexoUrl
+      ? (/[.](jpe?g|png|webp)$/i.test(a.anexoNome || a.anexoUrl)
+        ? `<button class="anexo anexo-foto" data-anexo="${esc(a.anexoUrl)}" data-foto="1" data-legenda="${esc(a.anexoNome || a.titulo)}" type="button"><img src="${esc(a.anexoUrl)}" alt="" loading="lazy"><span>${esc(a.anexoNome || 'Foto anexada')}</span></button>`
+        : `<button class="anexo" data-anexo="${esc(a.anexoUrl)}" type="button">${icone('paperclip')}<span>${esc(a.anexoNome || 'Abrir anexo')}</span></button>`)
+      : '';
     return `<article class="aviso ${esc(a.prioridade)}${chegouAgora ? ' chegou' : ''}" data-id="${esc(a.id)}">
       <span class="marca-p"></span>
       <h3>${esc(a.titulo)}</h3>
       <span class="quando">${relativo(a.criadoEm)}</span>
       ${a.texto ? `<p>${esc(a.texto)}</p>` : ''}
+      ${anexo}
       ${meta.length ? `<div class="meta">${meta.join(' · ')}</div>` : ''}
     </article>`;
   }
@@ -189,6 +195,39 @@
     </div>`;
   }
 
+  function linhaElogio(e) {
+    return `<div class="elogio">
+      <span class="coracao">${icone('heart')}</span>
+      <div class="info">
+        <h3 title="${esc(e.titulo)}">${esc(e.titulo)}</h3>
+        <p>${esc(e.texto)}</p>
+        <div class="detalhe">${[relativo(e.criadoEm), e.unidade !== 'todas' ? esc(NOME_UNIDADE[e.unidade]) : ''].filter(Boolean).join(' · ')}</div>
+      </div>
+    </div>`;
+  }
+
+  function renderSecao() {
+    const elogios = dados.secao === 'elogios';
+    $('secao-titulo').textContent = elogios ? 'Elogios' : 'Agenda';
+    $('secao-corpo').innerHTML = elogios
+      ? ((dados.elogios || []).map(linhaElogio).join('') || '<p class="vazio">Nenhum elogio ainda.</p>')
+      : (dados.eventos.map(linhaEvento).join('') || '<p class="vazio">Nada marcado por enquanto.</p>');
+  }
+
+  // ---------- Foto do aviso em tamanho grande ----------
+
+  function abrirVisor(url, legenda) {
+    $('visor-img').src = url;
+    $('visor-img').alt = legenda || 'Foto do aviso';
+    $('visor-legenda').textContent = legenda || '';
+    $('visor').hidden = false;
+  }
+
+  function fecharVisor() {
+    $('visor').hidden = true;
+    $('visor-img').removeAttribute('src');
+  }
+
   function render() {
     $('data').textContent = maiuscula(new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' }).replace('-feira', ''));
 
@@ -200,7 +239,7 @@
     $('n-avisos').textContent = dados.avisos.length || '';
     $('trilho-bolha').textContent = dados.avisos.filter((a) => a.prioridade !== 'info').length || '';
 
-    $('eventos').innerHTML = dados.eventos.map(linhaEvento).join('') || '<p class="vazio">Nada marcado por enquanto.</p>';
+    renderSecao();
 
     galeria.atualizar(dados.fotos || []);
 
@@ -407,6 +446,14 @@
   }
 
   document.addEventListener('click', (ev) => {
+    const anexo = ev.target.closest('[data-anexo]');
+    if (anexo) {
+      ev.stopPropagation();
+      // Foto abre grandona dentro do mural; documento abre no navegador padrão.
+      if (anexo.hasAttribute('data-foto')) { abrirVisor(anexo.dataset.anexo, anexo.dataset.legenda); return; }
+      window.open(anexo.dataset.anexo, '_blank', 'noopener'); // https cai no shell.openExternal do Electron
+      return;
+    }
     const sistema = ev.target.closest('.sistema');
     if (sistema && !personalizando) return abrirSistema(sistema);
     const aba = ev.target.closest('[data-aba]');
@@ -430,6 +477,9 @@
   $('btn-recolher').addEventListener('click', () => recolher(true));
   $('btn-expandir').addEventListener('click', () => recolher(false));
   $('trilho-avisos').addEventListener('click', () => recolher(false));
+  $('visor-fechar').addEventListener('click', (ev) => { ev.stopPropagation(); fecharVisor(); });
+  $('visor').addEventListener('click', (ev) => { if (ev.target === $('visor')) fecharVisor(); });
+  document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape' && !$('visor').hidden) fecharVisor(); });
 
   // ---------- Início ----------
 

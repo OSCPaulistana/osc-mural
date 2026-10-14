@@ -334,6 +334,40 @@ textarea { height: auto; min-height: 84px; padding: 8px 10px; resize: vertical; 
 .logo-campo { display: flex; align-items: center; gap: 12px; }
 .logo-campo .ajuda { margin: 0; }
 
+.anexo-campo { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.anexo-previa {
+  min-width: 38px;
+  height: 38px;
+  padding: 0 10px;
+  border-radius: 9px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid var(--linha);
+  background: var(--superficie);
+  color: var(--texto-2);
+  font-size: 12.5px;
+  max-width: 260px;
+}
+.anexo-previa .ic { width: 17px; height: 17px; flex: none; }
+.anexo-previa span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.anexo-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  padding: 4px 10px 4px 8px;
+  border: 1px solid var(--linha-forte);
+  border-radius: 99px;
+  font-size: 12.5px;
+  color: var(--texto-2);
+  max-width: 100%;
+}
+.anexo-chip:hover { background: var(--hover); color: var(--texto); }
+.anexo-chip .ic { width: 13px; height: 13px; flex: none; }
+.anexo-chip span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
 .arquivos-escolhidos { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; }
 .arquivos-escolhidos > * { width: 86px; height: 50px; object-fit: cover; border-radius: 5px; flex: none; background: #e4e3df; }
 
@@ -367,6 +401,8 @@ textarea { height: auto; min-height: 84px; padding: 8px 10px; resize: vertical; 
 .filtro span { margin-left: 4px; color: var(--mudo); font-variant-numeric: tabular-nums; }
 .filtro:hover { background: var(--hover); }
 .filtro.ativo { border-color: var(--texto); box-shadow: inset 0 0 0 1px var(--texto); }
+
+.chave-secao { display: flex; align-items: center; gap: 6px; margin-bottom: 14px; max-width: 900px; font-size: 13px; color: var(--mudo); }
 
 .grade-albuns { max-width: 900px; display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px 16px; }
 .album { display: flex; flex-direction: column; gap: 2px; padding: 0; border: 0; background: none; text-align: left; }
