@@ -17,6 +17,7 @@
     "appId": "br.com.oscpaulistana.mural",
     "productName": "Mural OSC",
     "copyright": "OSC Paulistana",
+    "publish": null,
     "directories": {
       "output": "dist"
     },
