@@ -209,9 +209,14 @@
   function renderSecao() {
     const elogios = dados.secao === 'elogios';
     $('secao-titulo').textContent = elogios ? 'Elogios' : 'Agenda';
-    $('secao-corpo').innerHTML = elogios
-      ? ((dados.elogios || []).map(linhaElogio).join('') || '<p class="vazio">Nenhum elogio ainda.</p>')
-      : (dados.eventos.map(linhaEvento).join('') || '<p class="vazio">Nada marcado por enquanto.</p>');
+    if (!elogios) {
+      $('secao-corpo').innerHTML = dados.eventos.map(linhaEvento).join('') || '<p class="vazio">Nada marcado por enquanto.</p>';
+      return;
+    }
+    // O servidor já filtra pela vigência; aqui vai o reforço para o cache offline.
+    const hoje = new Date().toLocaleDateString('sv-SE');
+    const noAr = (dados.elogios || []).filter((e) => (!e.inicioEm || e.inicioEm <= hoje) && (!e.fimEm || e.fimEm >= hoje));
+    $('secao-corpo').innerHTML = noAr.map(linhaElogio).join('') || '<p class="vazio">Nenhum elogio no momento.</p>';
   }
 
   // ---------- Foto do aviso em tamanho grande ----------

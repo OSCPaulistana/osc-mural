@@ -3,8 +3,8 @@
 Painel fixo na área de trabalho de cada colaborador. Mostra:
 - **Sistemas**: atalhos para sites e programas, 8 por aba. Cada colaborador pode esconder e reordenar no próprio PC (botão de ajustes);
 - **Avisos**: normais, importantes ou urgentes;
-- **Agenda ou Elogios**: o administrador escolhe qual das duas seções aparece no mural;
-- **Fotos** dos eventos: passam no rodapé e o clique abre a galeria completa, com todos os álbuns.
+- **Agenda ou Elogios**: o administrador escolhe qual das duas seções aparece no mural (elogios têm início e fim de publicação);
+- **Fotos** do último evento: passam no rodapé e o clique abre a galeria completa, com todos os álbuns.
 
 O administrador publica tudo pelo site, e os PCs recebem em até 30 segundos.
 

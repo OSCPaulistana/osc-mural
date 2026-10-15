@@ -55,6 +55,8 @@
       campos: [
         { nome: 'titulo', rotulo: 'Para quem', tipo: 'texto', max: 90, obrig: true, placeholder: 'Equipe do fiscal' },
         { nome: 'texto', rotulo: 'Mensagem', tipo: 'area', max: 300, obrig: true, placeholder: 'Parabéns pelo fechamento do mês sem pendências!' },
+        { nome: 'inicioEm', rotulo: 'Mostrar de', tipo: 'data', metade: true, ajuda: 'Em branco, entra no ar na hora.' },
+        { nome: 'fimEm', rotulo: 'Até', tipo: 'data', metade: true, ajuda: 'Em branco, fica até alguém excluir.' },
         { nome: 'unidade', rotulo: 'Quem vê', tipo: 'select', opcoes: UNIDADES, padrao: 'todas', metade: true },
       ],
     },
@@ -235,10 +237,18 @@
     </div>`;
   }
 
+  const foraDoAr = (e) => (e.inicioEm && e.inicioEm > hojeIso()) || (e.fimEm && e.fimEm < hojeIso());
+
   function linhaElogio(e) {
-    const meta = [esc(NOME_UNIDADE[e.unidade]), `publicado ${relativo(e.criadoEm)}`];
-    return `<div class="linha">
-      <span class="marca-p online"></span>
+    const fora = foraDoAr(e);
+    const situacao = fora
+      ? (e.fimEm && e.fimEm < hojeIso() ? `Saiu do mural em ${dataCurta(e.fimEm)} (prazo)` : `Entra no ar em ${dataCurta(e.inicioEm)}`)
+      : '<b class="online">No mural</b>';
+    const meta = [esc(NOME_UNIDADE[e.unidade])];
+    if (!fora && e.fimEm) meta.push(`até ${dataCurta(e.fimEm)}`);
+    meta.push(`publicado ${relativo(e.criadoEm)}`, situacao);
+    return `<div class="linha${fora ? ' passado' : ''}">
+      <span class="marca-p${fora ? '' : ' online'}"></span>
       <div class="linha-info"><strong>${esc(e.titulo)}</strong><p>${esc(e.texto)}</p><div class="meta">${meta.join(' · ')}</div></div>
       ${acoesPadrao(e.id)}
     </div>`;
@@ -341,7 +351,7 @@
     const h = hojeIso();
     $('c-avisos').textContent = dados.avisos.filter((a) => !naoNoMural(a)).length || '';
     $('c-eventos').textContent = dados.eventos.filter((e) => e.data >= h).length || '';
-    $('c-elogios').textContent = dados.elogios.length || '';
+    $('c-elogios').textContent = dados.elogios.filter((e) => !foraDoAr(e)).length || '';
     $('c-galeria').textContent = dados.albuns.length || '';
     $('c-sistemas').textContent = dados.sistemas.length || '';
     $('c-pcs').textContent = dados.pcs.length || '';

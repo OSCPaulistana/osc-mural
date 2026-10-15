@@ -129,3 +129,7 @@ create table if not exists elogios (
   atualizado_em timestamptz
 );
 insert into config (chave, valor) values ('secao', '"agenda"') on conflict (chave) do nothing;
+
+-- ---------- Versão 5: vigência dos elogios ----------
+alter table elogios add column if not exists inicio_em date;
+alter table elogios add column if not exists fim_em date;
