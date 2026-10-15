@@ -1,7 +1,8 @@
 // Gera o instalador do Windows e publica na página de instalação.
 //   npm run instalador
-// Precisa de: MURAL_SITE_URL, MURAL_CHAVE_PCS, BLOB_READ_WRITE_TOKEN e DATABASE_URL
-// (no .env.local, que sai de "vercel env pull .env.local --environment production").
+// Precisa de: MURAL_SITE_URL, MURAL_CHAVE_PCS, GH_TOKEN e DATABASE_URL
+// (no .env.local; o GH_TOKEN é um token fino só com acesso ao repo do mural).
+// O instalador vai para o GitHub Releases (download grátis, fora da franquia do Blob).
 import fs from 'node:fs';
 import path from 'node:path';
 import { execSync, spawnSync } from 'node:child_process';
@@ -14,7 +15,7 @@ const raiz = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const desktop = path.join(raiz, 'desktop');
 if (fs.existsSync(path.join(raiz, '.env.local'))) process.loadEnvFile(path.join(raiz, '.env.local'));
 
-for (const nome of ['MURAL_SITE_URL', 'MURAL_CHAVE_PCS', 'BLOB_READ_WRITE_TOKEN', 'DATABASE_URL']) {
+for (const nome of ['MURAL_SITE_URL', 'MURAL_CHAVE_PCS', 'GH_TOKEN', 'DATABASE_URL']) {
   if (!process.env[nome]) {
     console.error(`Falta a variável ${nome}.`);
     process.exit(1);
@@ -51,25 +52,52 @@ if (process.env.MURAL_TESTAR_INSTALADOR === '1') {
   if (!teste.ok) throw new Error('O teste do app empacotado falhou. Nada foi publicado.');
 }
 
-// 3. Envia para um nome estável: o Blob não acrescenta um sufixo aleatório
-// ao nome que aparece para o colaborador ao baixar.
-console.log(`Enviando ${(tamanho / 1024 / 1024).toFixed(0)} MB para o Vercel Blob...`);
-const { put } = await import('@vercel/blob');
-const blob = await put(`instalador/MuralOSC-Setup-${version}.exe`, fs.createReadStream(exe), {
-  access: 'public',
-  addRandomSuffix: false,
-  allowOverwrite: true,
-  multipart: true,
-  contentType: 'application/octet-stream',
-  token: process.env.BLOB_READ_WRITE_TOKEN,
+// 3. Publica no GitHub Releases: download grátis, fora da franquia de tráfego do Blob.
+const REPO = process.env.GH_REPO || 'OSCPaulistana/osc-mural';
+const cabecalhosGH = {
+  Authorization: `Bearer ${process.env.GH_TOKEN}`,
+  Accept: 'application/vnd.github+json',
+  'X-GitHub-Api-Version': '2022-11-28',
+};
+async function gh(caminho, opcoes = {}) {
+  const r = await fetch(`https://api.github.com${caminho}`, { ...opcoes, headers: { ...cabecalhosGH, ...opcoes.headers } });
+  const corpo = await r.json().catch(() => null);
+  if (!r.ok) throw new Error(`GitHub (${r.status}): ${corpo?.message || 'falhou'}`);
+  return corpo;
+}
+const etiqueta = `v${version}`;
+const nomeExe = `MuralOSC-Setup-${version}.exe`;
+let lancamento;
+try {
+  lancamento = await gh('/repos/' + REPO + '/releases', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ tag_name: etiqueta, name: `Mural OSC ${version}`, draft: false, prerelease: false }),
+  });
+} catch (erro) {
+  if (!/already_exists|already exists/i.test(erro.message)) throw erro;
+  lancamento = await gh('/repos/' + REPO + `/releases/tags/${etiqueta}`);
+}
+for (const antigo of (lancamento.assets || []).filter((a) => a.name === nomeExe)) {
+  await gh('/repos/' + REPO + `/releases/assets/${antigo.id}`, { method: 'DELETE' });
+}
+console.log(`Enviando ${(tamanho / 1024 / 1024).toFixed(0)} MB para o GitHub Releases...`);
+const subida = await fetch(`https://uploads.github.com/repos/${REPO}/releases/${lancamento.id}/assets?name=${encodeURIComponent(nomeExe)}`, {
+  method: 'POST',
+  headers: { ...cabecalhosGH, 'Content-Type': 'application/octet-stream', 'Content-Length': String(tamanho) },
+  body: fs.createReadStream(exe),
+  duplex: 'half',
 });
+const ativo = await subida.json().catch(() => null);
+if (!subida.ok || !ativo?.browser_download_url) throw new Error(`GitHub (${subida.status}): ${ativo?.message || 'não enviou o instalador'}`);
+const urlDownload = ativo.browser_download_url;
 
 // 4. A página de instalação passa a entregar esta versão
 const { consulta, obterPool } = require('../lib/db.js');
 await consulta(
   `insert into config (chave, valor) values ('instalador', $1)
    on conflict (chave) do update set valor = excluded.valor, atualizado_em = now()`,
-  [{ url: blob.downloadUrl, versao: version, tamanho, publicadoEm: new Date().toISOString() }]);
+  [{ url: urlDownload, versao: version, tamanho, publicadoEm: new Date().toISOString() }]);
 // Preservar versões anteriores permite reverter uma publicação, se necessário.
 await obterPool().end();
 console.log(`Publicado: versão ${version}. A página ${site} já entrega este instalador.`);

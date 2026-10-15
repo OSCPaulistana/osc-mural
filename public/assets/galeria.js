@@ -7,6 +7,10 @@
   const UNIDADE = params.get('unidade') || '';
   const noApp = params.get('app') === '1';
   const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const miniatura = (url, largura = 1600) => typeof url === 'string'
+    && url.includes('res.cloudinary.com') && /\/image\/upload\//.test(url) && !/\/image\/upload\/[^/]*[a-z]_/.test(url)
+    ? url.replace('/image/upload/', `/image/upload/f_auto,q_auto,w_${largura}/`)
+    : url;
 
   let albuns = [];
   let album = null; // álbum aberto
@@ -27,7 +31,7 @@
     $('albuns').hidden = false;
     $('albuns').innerHTML = albuns.map((a) => `
       <button class="album" data-album="${esc(a.id)}" type="button">
-        <span class="capa">${a.capa ? `<img src="${esc(a.capa)}" alt="" loading="lazy">` : ''}</span>
+        <span class="capa">${a.capa ? `<img src="${esc(miniatura(a.capa, 800))}" alt="" loading="lazy">` : ''}</span>
         <strong>${esc(a.titulo)}</strong>
         <span>${dataLonga(a.data)} · ${contar(a.fotos.length)}</span>
       </button>`).join('');
@@ -46,7 +50,7 @@
     $('fotos').hidden = false;
     $('fotos').innerHTML = album.fotos.map((f, i) => `
       <button class="foto" data-foto="${i}" type="button" title="${esc(f.legenda || 'Ampliar')}">
-        <img src="${esc(f.url)}" alt="${esc(f.legenda)}" loading="lazy">
+        <img src="${esc(miniatura(f.url, 800))}" alt="${esc(f.legenda)}" loading="lazy">
       </button>`).join('');
     $('vazio').hidden = album.fotos.length > 0;
     $('vazio').textContent = 'Este álbum ainda não tem fotos.';
@@ -57,14 +61,14 @@
     if (!album || !album.fotos.length) return;
     indice = (i + album.fotos.length) % album.fotos.length;
     const f = album.fotos[indice];
-    $('foto-grande').src = f.url;
+    $('foto-grande').src = miniatura(f.url, 1920);
     $('foto-grande').alt = f.legenda || album.titulo;
     $('legenda-grande').textContent = f.legenda || album.titulo;
     $('posicao').textContent = `${indice + 1} de ${album.fotos.length}`;
     $('tela-cheia').hidden = false;
     // Deixa a próxima foto pronta para a navegação não piscar.
     const proxima = album.fotos[(indice + 1) % album.fotos.length];
-    if (proxima) new Image().src = proxima.url;
+    if (proxima) new Image().src = miniatura(proxima.url, 1920);
   }
 
   function fecharFoto() {

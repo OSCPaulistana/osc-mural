@@ -308,7 +308,7 @@
     if (!dados.albuns.length) return '<div class="vazio"><strong>Nenhum álbum ainda</strong>Crie um álbum para cada evento e envie as fotos dentro dele.</div>';
     return `<div class="grade-albuns">${dados.albuns.map((a) => `
       <button class="album" data-album="${esc(a.id)}" type="button">
-        <span class="capa">${a.capa ? `<img src="${esc(a.capa)}" alt="" loading="lazy">` : icone('images')}</span>
+        <span class="capa">${a.capa ? `<img src="${esc(miniatura(a.capa, 800))}" alt="" loading="lazy">` : icone('images')}</span>
         <strong>${esc(a.titulo)}</strong>
         <span>${dataCurta(a.data)} · ${a.fotos.length} ${a.fotos.length === 1 ? 'foto' : 'fotos'} · ${esc(NOME_UNIDADE[a.unidade])}</span>
       </button>`).join('')}</div>`;
@@ -319,7 +319,7 @@
       <span id="soltar-texto">ou clique para escolher. Dá para mandar várias de uma vez. JPG, PNG ou WEBP até ${LIMITE_FOTO_MB} MB cada.</span></div></label>`;
     const fotos = a.fotos.length ? `<div class="grade-fotos">${a.fotos.map((f) => `
       <figure class="foto-admin">
-        <div class="thumb"><img src="${esc(f.url)}" alt="" loading="lazy">
+        <div class="thumb"><img src="${esc(miniatura(f.url, 600))}" alt="" loading="lazy">
           ${f.url === a.capa ? '<span class="selo-capa">Capa</span>' : ''}
           <div class="acoes sobre">
             <button class="btn-ico" data-acao="capa" data-id="${esc(f.id)}" title="Usar como capa">${icone('star')}</button>
@@ -427,7 +427,7 @@
           `<label title="${n}" style="--c:var(--cor-${n})"><input type="radio" name="${c.nome}" value="${n}"${n === v ? ' checked' : ''}></label>`).join('')}</div></div>`;
       case 'logo':
         return `<div class="campo"><span class="rotulo">${esc(c.rotulo)}</span><div class="logo-campo">
-          <span class="tile" id="logo-previa">${v ? `<img src="${esc(v)}" alt="">` : icone('image')}</span>
+          <span class="tile" id="logo-previa">${v ? `<img src="${esc(miniatura(v, 200))}" alt="">` : icone('image')}</span>
           <input type="hidden" name="logo" value="${esc(v)}">
           <button class="btn" type="button" id="logo-enviar">${v ? 'Trocar' : 'Enviar logo'}</button>
           <button class="btn" type="button" id="logo-remover"${v ? '' : ' hidden'}>Remover</button>
@@ -535,24 +535,52 @@
     if (contador) contador.textContent = `${alvo.value.length}/${alvo.maxLength}`;
   });
 
-  // ---------- Envio de arquivos (direto do navegador para o Vercel Blob) ----------
+  // ---------- Envio de arquivos (direto do navegador para a Cloudinary) ----------
 
-  async function enviarParaBlob(pasta, arquivo) {
-    if (typeof window.muralUpload !== 'function') throw new Error('O envio de arquivos não carregou. Recarregue a página.');
-    const base = arquivo.name.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^A-Za-z0-9.]+/g, '-').replace(/^-+|-+$/g, '').slice(-80) || 'foto';
-    try {
-      return await window.muralUpload(`${pasta}/${base}`, arquivo, {
-        access: 'public',
-        handleUploadUrl: '/api/upload',
-        contentType: arquivo.type,
-        multipart: arquivo.size > 10 * 1024 * 1024,
-      });
-    } catch (erro) {
-      if (/login|token/i.test(erro.message)) throw new Error('Sua sessão expirou. Entre de novo.');
-      if (/content type|contentType/i.test(erro.message)) throw new Error('Formato não aceito.');
-      if (/too large|size/i.test(erro.message)) throw new Error('Arquivo grande demais.');
-      throw new Error('Não foi possível enviar o arquivo.');
-    }
+  // O servidor assina (valida pasta, tipo e tamanho); o arquivo sobe direto,
+  // sem passar pelo site. O segredo nunca sai do servidor.
+  async function enviarArquivo(pasta, arquivo) {
+    const assinatura = await api('POST', '/api/assinar', {
+      pasta, nome: arquivo.name, tipo: arquivo.type, tamanho: arquivo.size,
+    });
+    const form = new FormData();
+    form.append('file', arquivo);
+    form.append('api_key', assinatura.apiKey);
+    form.append('timestamp', assinatura.timestamp);
+    form.append('signature', assinatura.signature);
+    form.append('folder', assinatura.folder);
+    form.append('public_id', assinatura.publicId);
+    const r = await fetch(`https://api.cloudinary.com/v1_1/${assinatura.cloud}/${assinatura.recurso}/upload`, { method: 'POST', body: form });
+    const json = await r.json().catch(() => null);
+    if (!r.ok || !json?.secure_url) throw new Error('Não foi possível enviar o arquivo.');
+    return { url: json.secure_url };
+  }
+
+  // Entrega a imagem já otimizada (formato e largura ideais para a tela).
+  // Só mexe em URL da Cloudinary sem transformação; o original segue guardado.
+  const miniatura = (url, largura = 1600) => typeof url === 'string'
+    && url.includes('res.cloudinary.com') && /\/image\/upload\//.test(url) && !/\/image\/upload\/[^/]*[a-z]_/.test(url)
+    ? url.replace('/image/upload/', `/image/upload/f_auto,q_auto,w_${largura}/`)
+    : url;
+
+  // Fotos de celular são enormes: comprime no navegador antes de enviar
+  // (lado maior em 1920px, JPEG ~0.82). Uma foto de 1,5 MB vira ~250 KB,
+  // o que economiza a franquia de tráfego do armazenamento. Só acima de 600 KB.
+  async function comprimirFoto(arquivo) {
+    if (!arquivo.type.startsWith('image/') || arquivo.size <= 600 * 1024) return arquivo;
+    let bitmap = null;
+    try { bitmap = await createImageBitmap(arquivo); } catch { return arquivo; }
+    const escala = Math.min(1, 1920 / Math.max(bitmap.width, bitmap.height));
+    if (escala >= 1) { bitmap.close(); return arquivo; }
+    const tela = document.createElement('canvas');
+    tela.width = Math.round(bitmap.width * escala);
+    tela.height = Math.round(bitmap.height * escala);
+    tela.getContext('2d').drawImage(bitmap, 0, 0, tela.width, tela.height);
+    bitmap.close();
+    const blob = await new Promise((ok) => tela.toBlob(ok, 'image/jpeg', 0.82));
+    if (!blob || blob.size >= arquivo.size) return arquivo;
+    const nome = arquivo.name.replace(/[.][a-z0-9]+$/i, '') || 'foto';
+    return new File([blob], `${nome}.jpg`, { type: 'image/jpeg' });
   }
 
   async function enviarFotos(arquivos) {
@@ -569,7 +597,7 @@
         $('soltar-texto').textContent = 'Pode continuar usando o painel. Não feche esta página até terminar.';
       }
       try {
-        const blob = await enviarParaBlob('fotos', aceitas[i]);
+        const blob = await enviarArquivo('fotos', await comprimirFoto(aceitas[i]));
         await api('POST', `/api/albuns/${album}/fotos`, { url: blob.url });
       } catch {
         falhas++;
@@ -592,7 +620,7 @@
   });
   function definirLogo(url) {
     $('form-item').elements.logo.value = url;
-    $('logo-previa').innerHTML = url ? `<img src="${esc(url)}" alt="">` : icone('image');
+    $('logo-previa').innerHTML = url ? `<img src="${esc(miniatura(url, 200))}" alt="">` : icone('image');
     $('logo-enviar').textContent = url ? 'Trocar' : 'Enviar logo';
     $('logo-remover').hidden = !url;
   }
@@ -604,7 +632,7 @@
       if (!TIPOS_FOTO.includes(f.type)) throw new Error('Use PNG, JPG ou WEBP.');
       if (f.size > 2 * 1024 * 1024) throw new Error('O logo pode ter no máximo 2 MB.');
       $('logo-enviar').textContent = 'Enviando…';
-      const { url } = await enviarParaBlob('logos', f);
+      const { url } = await enviarArquivo('logos', f);
       definirLogo(url);
     } catch (erro) {
       $('logo-enviar').textContent = 'Enviar logo';
@@ -631,7 +659,7 @@
       if (!TIPOS_ANEXO.includes(tipo)) throw new Error('Formato não aceito. Use foto, PDF, Word ou Excel.');
       if (f.size > LIMITE_ANEXO_MB * 1024 * 1024) throw new Error(`O anexo pode ter no máximo ${LIMITE_ANEXO_MB} MB.`);
       $('anexo-enviar').textContent = 'Enviando…';
-      const { url } = await enviarParaBlob('anexos', f);
+      const { url } = await enviarArquivo('anexos', f);
       definirAnexo(url, f.name.slice(0, 120));
     } catch (erro) {
       if ($('anexo-enviar')) $('anexo-enviar').textContent = $('form-item').elements.anexoUrl?.value ? 'Trocar' : 'Anexar foto ou documento';

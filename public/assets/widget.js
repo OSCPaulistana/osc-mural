@@ -25,6 +25,11 @@
   const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const icone = (n) => `<i class="ic" style="--i:url(/icones/${esc(n)}.svg)"></i>`;
   const maiuscula = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+  // Imagem da Cloudinary já otimizada (formato e largura ideais). O original segue guardado.
+  const miniatura = (url, largura = 1600) => typeof url === 'string'
+    && url.includes('res.cloudinary.com') && /\/image\/upload\//.test(url) && !/\/image\/upload\/[^/]*[a-z]_/.test(url)
+    ? url.replace('/image/upload/', `/image/upload/f_auto,q_auto,w_${largura}/`)
+    : url;
 
   function dataDe(iso) {
     const [a, m, d] = iso.split('-').map(Number);
@@ -166,7 +171,7 @@
     if (a.unidade !== 'todas') meta.push(esc(NOME_UNIDADE[a.unidade]));
     const anexo = a.anexoUrl
       ? (/[.](jpe?g|png|webp)$/i.test(a.anexoNome || a.anexoUrl)
-        ? `<button class="anexo anexo-foto" data-anexo="${esc(a.anexoUrl)}" data-foto="1" data-legenda="${esc(a.anexoNome || a.titulo)}" type="button"><img src="${esc(a.anexoUrl)}" alt="" loading="lazy"><span>${esc(a.anexoNome || 'Foto anexada')}</span></button>`
+        ? `<button class="anexo anexo-foto" data-anexo="${esc(a.anexoUrl)}" data-foto="1" data-legenda="${esc(a.anexoNome || a.titulo)}" type="button"><img src="${esc(miniatura(a.anexoUrl, 400))}" alt="" loading="lazy"><span>${esc(a.anexoNome || 'Foto anexada')}</span></button>`
         : `<button class="anexo" data-anexo="${esc(a.anexoUrl)}" type="button">${icone('paperclip')}<span>${esc(a.anexoNome || 'Abrir anexo')}</span></button>`)
       : '';
     return `<article class="aviso ${esc(a.prioridade)}${chegouAgora ? ' chegou' : ''}" data-id="${esc(a.id)}">
@@ -222,7 +227,7 @@
   // ---------- Foto do aviso em tamanho grande ----------
 
   function abrirVisor(url, legenda) {
-    $('visor-img').src = url;
+    $('visor-img').src = miniatura(url, 1920);
     $('visor-img').alt = legenda || 'Foto do aviso';
     $('visor-legenda').textContent = legenda || '';
     $('visor').hidden = false;
@@ -299,7 +304,7 @@
       el.className = 'camada';
       el.alt = f.legenda || f.album;
       el.decoding = 'async';
-      el.src = f.url;
+      el.src = miniatura(f.url, 1600);
       el.addEventListener('error', () => setTimeout(() => this.proxima(el), 1000), { once: true });
       el.addEventListener('load', () => {
         requestAnimationFrame(() => el.classList.add('visivel'));

@@ -18,7 +18,7 @@ O administrador publica tudo pelo site, e os PCs recebem em até 30 segundos.
 | Mural | `/widget` | A tela que aparece nos PCs. O app carrega do site, então mudanças visuais chegam a todos sem reinstalar. |
 | API | `/api/*` | Uma função da Vercel (`api/index.js` → `lib/app.js`). |
 | Banco | Neon (Postgres) | Tabelas em `db/schema.sql`. |
-| Arquivos | Vercel Blob | Fotos, logos e o instalador. Vão do navegador direto para o Blob. Vídeos não são aceitos por enquanto. |
+| Arquivos | Cloudinary (grátis) | Fotos, logos e anexos. Vão do navegador direto para lá, com assinatura do site. Vídeos não são aceitos por enquanto. |
 | App do Windows | `desktop/` | Electron. Fixa o mural na área de trabalho, abre os atalhos, notifica urgentes e inicia com o Windows. |
 
 **Quem pode ler o conteúdo:**
@@ -32,7 +32,7 @@ Sem uma das duas coisas, o site não entrega avisos nem fotos. Isso importa por 
 | Variável | Para que serve |
 |---|---|
 | `DATABASE_URL` | Conexão do Neon (criada pela integração). |
-| `BLOB_READ_WRITE_TOKEN` | Vercel Blob (criada ao conectar o Blob). |
+| `CLOUDINARY_CLOUD`, `CLOUDINARY_KEY`, `CLOUDINARY_SECRET` | Cloudinary (upload de fotos, logos e anexos; o segredo fica só no servidor). |
 | `MURAL_SENHA_ADMIN` | Senha de instalação: só serve para criar o primeiro administrador. Depois, cada admin entra com o próprio e-mail e senha. |
 | `MURAL_SEGREDO` | Assina o cookie de sessão. É um texto aleatório longo. |
 | `MURAL_CHAVE_PCS` | Chave que o app instalado usa. Se trocar, é preciso gerar o instalador de novo. |
@@ -51,9 +51,9 @@ npm run dev           # site local em http://localhost:3000, usando o .env.local
 
 1. Aumente `version` em `desktop/package.json`.
 2. Rode `cd desktop; npm install` e depois `cd ..; npm run instalador`.
-3. O script gera `MuralOSC-Setup-<versão>.exe`, envia para o Blob e a página de instalação passa a entregar essa versão.
+3. O script gera `MuralOSC-Setup-<versão>.exe`, publica no GitHub Releases e a página de instalação passa a entregar essa versão.
 
-Variáveis marcadas como Secret são exportadas pela Vercel como `[SENSITIVE]`. Esse valor nunca pode ir para um instalador. A chave real de `MURAL_CHAVE_PCS` deve ser sincronizada entre a produção e o ambiente local. Antes de empacotar, o script verifica a autenticação no site; depois confere a configuração dentro do ASAR. Uma falha aborta a publicação. As versões anteriores do instalador são preservadas no Blob.
+Variáveis marcadas como Secret são exportadas pela Vercel como `[SENSITIVE]`. Esse valor nunca pode ir para um instalador. A chave real de `MURAL_CHAVE_PCS` deve ser sincronizada entre a produção e o ambiente local. Antes de empacotar, o script verifica a autenticação no site; depois confere a configuração dentro do ASAR. Uma falha aborta a publicação. É preciso um token do GitHub (`GH_TOKEN`, só com acesso a este repo) para publicar o instalador; ele fica só no `.env.local`, nunca no Git.
 
 Para a verificação de uma versão no Windows deste escritório, defina `$env:MURAL_TESTAR_INSTALADOR='1'` antes de `npm run instalador`. O teste roda o código dentro do ASAR, confere o conteúdo autenticado, aciona Win+D quatro vezes e verifica recolher/expandir com a escala da tela. A publicação só continua se passar. Requer o perfil local do Mural já configurado; não é um teste para ambiente sem desktop. `node --test scripts/tests/configuracao.test.mjs` verifica o bloqueio de credenciais de exemplo e rejeitadas.
 
