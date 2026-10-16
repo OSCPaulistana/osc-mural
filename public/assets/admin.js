@@ -79,6 +79,7 @@
       campos: [
         { nome: 'nome', rotulo: 'Nome', tipo: 'texto', max: 24, obrig: true, placeholder: 'Domínio', metade: true },
         { nome: 'descricao', rotulo: 'Descrição', tipo: 'texto', max: 60, placeholder: 'Sistema contábil', metade: true },
+        { nome: 'unidade', rotulo: 'Quem vê', tipo: 'select', opcoes: UNIDADES, padrao: 'todas', metade: true },
         { nome: 'tipo', rotulo: 'O atalho abre', tipo: 'opcoes', opcoes: [['site', 'Um site'], ['programa', 'Um programa do PC']], padrao: 'site' },
         { nome: 'endereco', rotulo: 'Endereço', tipo: 'texto', max: 400, obrig: true },
         { nome: 'logo', rotulo: 'Logo', tipo: 'logo' },
@@ -271,7 +272,7 @@
       <span class="tile" style="--cor:var(--cor-${esc(s.cor)})">${marca}</span>
       <div class="linha-info">
         <strong>${esc(s.nome)}</strong>${s.descricao ? ` <span class="meta">· ${esc(s.descricao)}</span>` : ''}
-        <div class="meta">${s.tipo === 'site' ? 'Site' : 'Programa'} · <code>${esc(s.endereco)}</code>${total > 8 ? ` · aba ${aba}` : ''}</div>
+        <div class="meta">${s.tipo === 'site' ? 'Site' : 'Programa'} · ${esc(NOME_UNIDADE[s.unidade] || s.unidade)} · <code>${esc(s.endereco)}</code>${total > 8 ? ` · aba ${aba}` : ''}</div>
       </div>
       ${acoesPadrao(s.id, mover)}
     </div>`;

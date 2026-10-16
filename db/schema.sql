@@ -133,3 +133,11 @@ insert into config (chave, valor) values ('secao', '"agenda"') on conflict (chav
 -- ---------- Versão 5: vigência dos elogios ----------
 alter table elogios add column if not exists inicio_em date;
 alter table elogios add column if not exists fim_em date;
+
+-- ---------- Versão 6: quem vê o sistema ----------
+alter table sistemas add column if not exists unidade text not null default 'todas';
+do $$ begin
+  if not exists (select 1 from pg_constraint where conname = 'sistemas_unidade') then
+    alter table sistemas add constraint sistemas_unidade check (unidade in ('todas', 'assis', 'sao-paulo'));
+  end if;
+end $$;
