@@ -221,7 +221,7 @@
     // O servidor já filtra pela vigência; aqui vai o reforço para o cache offline.
     const hoje = new Date().toLocaleDateString('sv-SE');
     const noAr = (dados.elogios || []).filter((e) => (!e.inicioEm || e.inicioEm <= hoje) && (!e.fimEm || e.fimEm >= hoje));
-    $('secao-corpo').innerHTML = noAr.map(linhaElogio).join('') || '<p class="vazio">Nenhum elogio no momento.</p>';
+    $('secao-corpo').innerHTML = noAr.slice(0, 6).map(linhaElogio).join('') || '<p class="vazio">Nenhum elogio no momento.</p>';
   }
 
   // ---------- Foto do aviso em tamanho grande ----------
@@ -472,6 +472,8 @@
     if (pref) return mudarPreferencia(pref.dataset.p, pref.dataset.id);
     const aviso = ev.target.closest('.aviso');
     if (aviso) aviso.classList.toggle('aberto');
+    const elogio = ev.target.closest('.elogio');
+    if (elogio) elogio.classList.toggle('aberto');
   });
   $('btn-personalizar').addEventListener('click', () => personalizar(!personalizando));
   $('p-concluir').addEventListener('click', () => personalizar(false));
